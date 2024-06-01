@@ -1,0 +1,22 @@
+outpout_dir: models/
+prediction_dir: training_prediction/
+model_architecture: resnet18
+pretrained: True
+preprocessing: "RGB"
+log_dir: "log"
+image_net_normalize : False
+resize: [512, 512]
+channel : 3
+loss: "MSE"
+number_kfold: 5
+regularization: False
+lambda_l1: 0.1
+data_augmentation: True
+gpu_device: 0
+lr: 1e-4
+batch_size: 4
+epochs: 20
+workers: 8
+seed: 123
+tbp: 8888
+auto_eval: True
