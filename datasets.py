@@ -60,31 +60,33 @@ def get_random_crop(image, mask, crop_width=256, crop_height=256):
     return crop_image, crop_mask
 
 
-def data_augmentation(image):
+def data_augmentation(x, y):
 
-    image = np.array(image)
+
     apply_transform = ["yes", "no"]
 
     if random.choice(apply_transform)=="yes":
-
 
         # Define your augmentation transformations
         transform = A.Compose([
             A.HorizontalFlip(p=0.5),  # Random horizontal flip with a probability of 0.5
             A.VerticalFlip(p=0.5),    # Random vertical flip with a probability of 0.5
-            # Add more augmentations as needed
+
         ])
 
         # Perform augmentation on the image
-        augmented = transform(image=image)
+        x_augmented = transform(image=x)
+        y_augmented = transform(image=y)
         # Retrieve the augmented image
-        augmented_image = augmented['image']
-        # augmented_image = np.transpose(augmented_image,(2,1,0))
+        x_augmented = x_augmented['image']
+        y_augmented = y_augmented['image']
+
 
     else:
-        augmented_image = image
+        x_augmented = x
+        y_augmented = y
 
-    return augmented_image
+    return x_augmented, y_augmented
 
 
 def normalize(band):
@@ -157,20 +159,24 @@ class TrainDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
-        x[np.isnan(x)] = 0
+
         y = self.ds_target[index].values
 
-        x = cv2.merge((x, x, x))
 
+        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm[np.isnan(x_norm)] = 0.001
 
         transform = transforms.Compose([
             transforms.ToTensor()])
 
-        x = transform(x)
+        x_norm = transform(x_norm)
 
-        y = torch.tensor(y, dtype=torch.float32).unsqueeze(0)
+        y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)
 
-        return x, y
+        return x_norm, y_norm
 
     def __len__(self):
         return len(self.ds_inputs)
@@ -191,20 +197,29 @@ class EvalDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
-        x[np.isnan(x)] = 0
+
         y = self.ds_target[index].values
 
-        x = cv2.merge((x, x, x))
 
+        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm[np.isnan(x_norm)] = 0.001
+
+
+
+        # x = cv2.merge((x, x, x))
+        # x , y = data_augmentation(x,y)
 
         transform = transforms.Compose([
             transforms.ToTensor()])
 
-        x = transform(x)
+        x_norm = transform(x_norm)
 
-        y = torch.tensor(y, dtype=torch.float32).unsqueeze(0)
+        y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)
 
-        return x, y
+        return x_norm, y_norm
 
     def __len__(self):
         return len(self.ds_inputs)
@@ -225,10 +240,11 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
-        x[np.isnan(x)] = 0
+        x[np.isnan(x)] = 0.01
         y = self.ds_target[index].values
+        # x , y = data_augmentation(x,y)
 
-        x = cv2.merge((x, x, x))
+        # x = cv2.merge((x, x, x))
 
 
         transform = transforms.Compose([
