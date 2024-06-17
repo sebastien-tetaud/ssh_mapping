@@ -1,5 +1,7 @@
 #custom
-
+data/
+log/
+runs/
 *.nc
 
 # Byte-compiled / optimized / DLL files
