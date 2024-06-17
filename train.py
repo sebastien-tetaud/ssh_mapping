@@ -1,7 +1,6 @@
 import copy
 import datetime
 import os
-import warnings
 
 import matplotlib.pylab as plt
 import numpy as np
@@ -169,24 +168,16 @@ def main(config):
             inputs = torch.squeeze(inputs,0)
             inputs = inputs.detach().cpu().numpy()[0,:,:]
 
+            from train_logs import log_prediction_plot
             if index==20:
 
-                fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(25,5))
-                fig.suptitle(f'Epoch {epoch}')
-                inputs[inputs==0.001] = np.nan
-                im = ax1.pcolormesh(inputs, vmin=0,vmax=1)
-                plt.colorbar(im)
-                ax1.set_title('Input')
-                im = ax2.pcolormesh(pred, vmin=0,vmax=1)
-                plt.colorbar(im)
-                ax2.set_title('Prediction')
-                im = ax3.pcolormesh(target, vmin=0,vmax=1)
-                plt.colorbar(im)
-                ax3.set_title('Target')
-                plt.savefig(f'{prediction_dir}/input_epoch{epoch}_img{index}.png')
+                log_prediction_plot(inputs, pred, target, epoch, prediction_dir)
 
             targets.append(target.flatten())
             preds.append(pred.flatten())
+
+        train_tensorboard_writer.add_scalar('Loss/Validation', eval_losses.avg, epoch)
+        val_tensorboard_writer.add_scalar('Loss/Trainin', train_losses.avg, epoch)
 
         rmse = root_mean_squared_error(targets, preds)
         metrics_dict[epoch] = { "rmse": rmse,
@@ -213,37 +204,34 @@ def main(config):
 
         logger.info(f'Epoch {epoch} Eval {LOSS_FUNC} - Loss: {eval_losses.avg} - rmse {rmse}')
 
-    #     # Save best model
-    #     if epoch == 0:
+        # Save best model
+        if epoch == 0:
 
-    #         best_epoch = epoch
-    #         best_f1 = f1
-    #         best_loss = eval_losses.avg
-    #         best_weights = copy.deepcopy(model.state_dict())
+            best_epoch = epoch
+            best_rmse = rmse
+            best_loss = eval_losses.avg
+            best_weights = copy.deepcopy(model.state_dict())
 
-    #     elif f1 > best_f1:
+        if rmse < best_rmse:
 
-    #         best_epoch = epoch
-    #         best_f1 = f1
-    #         best_loss = eval_losses.avg
-    #         best_weights = copy.deepcopy(model.state_dict())
+            best_epoch = epoch
+            best_rmse = rmse
+            best_loss = eval_losses.avg
+            best_weights = copy.deepcopy(model.state_dict())
 
-
-    # logger.info(f'best epoch: {best_epoch}, best F1-score: {best_f1} loss: {best_loss}')
-
-    # torch.save(best_weights, os.path.join(prediction_dir, 'best.pth'))
-    # logger.info('Training Done')
-    # logger.info('best epoch: {}, {} loss: {:.2f}'.format( best_epoch, LOSS_FUNC, best_loss))
-    # # Measure total training time
-    # end_training_date = datetime.datetime.now()
-    # training_duration = end_training_date - start_training_date
-    # logger.info('Training Duration: {}'.format(str(training_duration)))
-    # df_val_metrics['Training_duration'] = training_duration
-    # df_val_metrics['nb_parameters'] = nb_parameters
-    # model_size = estimate_model_size(model)
-    # logger.info("model size: {}".format(model_size))
-    # df_val_metrics['model_size'] = model_size
-    # df_val_metrics.to_csv(os.path.join(prediction_dir, 'valid_metrics_log.csv'))
+    logger.info(f'best epoch: {best_epoch}, best RMSE: {best_rmse} loss: {best_loss}')
+    torch.save(best_weights, os.path.join(prediction_dir, 'best.pth'))
+    logger.info('Training Done')
+    logger.info('best epoch: {}, {} loss: {:.2f}'.format( best_epoch, LOSS_FUNC, best_loss))
+    end_training_date = datetime.datetime.now()
+    training_duration = end_training_date - start_training_date
+    logger.info('Training Duration: {}'.format(str(training_duration)))
+    df_val_metrics['Training_duration'] = training_duration
+    df_val_metrics['nb_parameters'] = nb_parameters
+    model_size = estimate_model_size(model)
+    logger.info("model size: {}".format(model_size))
+    df_val_metrics['model_size'] = model_size
+    df_val_metrics.to_csv(os.path.join(prediction_dir, 'valid_metrics_log.csv'))
 
     # if AUTO_EVAL:
 
