@@ -17,6 +17,3 @@ def log_prediction_plot(inputs, pred, target, epoch, prediction_dir):
     ax3.set_title('Target')
     plt.savefig(f'{prediction_dir}/input_epoch{epoch}.png')
 
-
-
-

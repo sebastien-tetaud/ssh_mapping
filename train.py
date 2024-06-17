@@ -141,7 +141,8 @@ def main(config):
                 loss_train.backward()
                 optimizer.step()
                 train_losses.update(loss_train.item(), len(inputs))
-                # train_log(step=step, loss=loss, tensorboard_writer=train_tensorboard_writer, name="Training")
+                from train_logs import train_log
+                # train_log(step=step, loss=loss_train, tensorboard_writer=train_tensorboard_writer, name="Training")
                 t.set_postfix(loss='{:.6f}'.format(train_losses.avg))
                 t.update(len(inputs))
                 step += 1
