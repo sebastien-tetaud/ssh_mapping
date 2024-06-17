@@ -2,10 +2,8 @@ import copy
 import datetime
 import os
 
-import matplotlib.pylab as plt
-import numpy as np
-import pandas as pd
-import torch
+import pandas as pd # type: ignore
+import torch # type: ignore
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import xarray as xr
@@ -129,7 +127,6 @@ def main(config):
         train_losses = AverageMeter()
         eval_losses = AverageMeter()
         model.train()
-
         with tqdm(total=(len(train_dataset) - len(train_dataset) % BATCH_SIZE), ncols = 100, colour='#3eedc4') as t:
             t.set_description('epoch: {}/{}'.format(epoch, NUM_EPOCHS - 1))
             for data in train_dataloader:
