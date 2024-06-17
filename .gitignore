@@ -3,6 +3,7 @@ data/
 log/
 runs/
 *.nc
+training_prediction
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
