@@ -12,3 +12,7 @@ bokeh==2.4.3
 torch==2.0.1
 torchvision==0.15.2
 segmentation-models-pytorch==0.3.3
+xarray
+loguru
+albumentations
+seaborn
