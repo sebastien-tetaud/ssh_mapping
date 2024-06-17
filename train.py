@@ -233,16 +233,6 @@ def main(config):
     df_val_metrics['model_size'] = model_size
     df_val_metrics.to_csv(os.path.join(prediction_dir, 'valid_metrics_log.csv'))
 
-    # if AUTO_EVAL:
-
-    #     from eval import auto_eval
-    #     model_path = os.path.join(prediction_dir, 'best.pth')
-    #     preds_eval, targets_eval = auto_eval(model_path=model_path,
-    #                                         model_architecture=MODEL_ARCHITECTURE,
-    #                                         save_path=prediction_dir)
-    #     plot_confusion_matrix(preds_eval,targets_eval,prediction_dir)
-
-
 if __name__ == '__main__':
 
     with open("config.yaml", "r") as stream:
