@@ -1,17 +1,11 @@
 outpout_dir: models/
 prediction_dir: training_prediction/
-model_architecture: resnet18
+input_path: /workspace/project/ssh_mapping/data_inputs_5days.nc
+target_path: /workspace/project/ssh_mapping/data_target.nc
+data_split: [85,15]
 pretrained: True
-preprocessing: "RGB"
 log_dir: "log"
-image_net_normalize : False
-resize: [512, 512]
-channel : 3
 loss: "MSE"
-number_kfold: 5
-regularization: False
-lambda_l1: 0.1
-data_augmentation: True
 gpu_device: 0
 lr: 1e-4
 batch_size: 32

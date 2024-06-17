@@ -1,189 +1,26 @@
 import copy
 import datetime
 import os
-import yaml
-import pandas as pd
-import xarray as xr
+import warnings
+
 import matplotlib.pylab as plt
+import numpy as np
+import pandas as pd
 import torch
-from torch import nn
-import torch.optim as optim
 import torch.backends.cudnn as cudnn
+import torch.optim as optim
+import xarray as xr
+import yaml
+from loguru import logger
+from sklearn.metrics import root_mean_squared_error
+from torch import nn
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-import torchvision.transforms as T
 from tqdm import tqdm
-from datasets import TrainDataset, EvalDataset
-from torchvision.transforms.functional import to_pil_image
-from sklearn.metrics import root_mean_squared_error
+
+from datasets import EvalDataset, TrainDataset
+from models import AutoencoderCNN
 from utils import *
-import torchvision.models as models
-from sklearn.metrics import accuracy_score, f1_score
-
-from loguru import logger
-import random
-import numpy as np
-
-import warnings
-warnings.simplefilter('ignore')
-
-
-def seed_everything(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-class ModifiedMobileNetV2(nn.Module):
-    def __init__(self):
-        super(ModifiedMobileNetV2, self).__init__()
-        # Load the pre-trained MobileNetV2 model
-        self.mobilenet_v2 = models.mobilenet_v2(weights=None)
-
-        # Remove the classifier
-        self.features = self.mobilenet_v2.features
-
-        # Add a final convolutional layer to output a single channel with the same spatial dimensions
-        self.final_conv = nn.Conv2d(in_channels=1280, out_channels=1, kernel_size=1)
-
-        # Optional: add upsampling layer to ensure output matches input dimensions (if needed)
-        self.upsample = nn.Upsample(size=(100, 100), mode='bilinear', align_corners=False)
-
-    def forward(self, x):
-        x = self.features(x)  # Get feature maps
-        x = self.final_conv(x)  # Apply the final conv layer
-        x = self.upsample(x)
-        return x
-
-
-class SimpleCNN(nn.Module):
-    def __init__(self):
-        super(SimpleCNN, self).__init__()
-
-        # Define convolutional layers
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
-        self.relu1 = nn.ReLU()
-
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.relu2 = nn.ReLU()
-
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
-        self.relu3 = nn.ReLU()
-
-        self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
-        self.relu4 = nn.ReLU()
-
-        self.conv5 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
-        self.relu5 = nn.ReLU()
-        self.conv6 = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
-
-    def forward(self, x):
-        # Apply convolutional layers
-        x = self.conv1(x)
-        x = self.relu1(x)
-
-        x = self.conv2(x)
-        x = self.relu2(x)
-
-        x = self.conv3(x)
-        x = self.relu3(x)
-
-        x = self.conv4(x)
-        x = self.relu4(x)
-
-        x = self.conv5(x)
-        x = self.relu5(x)
-
-        x = self.conv6(x)
-
-        return x
-
-
-
-class AutoencoderCNN(nn.Module):
-    def __init__(self):
-        super(AutoencoderCNN, self).__init__()
-
-        # Encoder
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
-        self.relu1 = nn.ReLU()
-
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.relu2 = nn.ReLU()
-
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
-        self.relu3 = nn.ReLU()
-
-        self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
-        self.relu4 = nn.ReLU()
-
-        self.conv5 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
-        self.relu5 = nn.ReLU()
-
-        self.conv6 = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
-
-        # Decoder
-        self.deconv1 = nn.ConvTranspose2d(in_channels=1, out_channels=256, kernel_size=3, stride=1, padding=1)
-        self.relu6 = nn.ReLU()
-
-        self.deconv2 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1)
-        self.relu7 = nn.ReLU()
-
-        self.deconv3 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1)
-        self.relu8 = nn.ReLU()
-
-        self.deconv4 = nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.relu9 = nn.ReLU()
-
-        self.deconv5 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1)
-        self.relu10 = nn.ReLU()
-
-        self.deconv6 = nn.ConvTranspose2d(in_channels=16, out_channels=1, kernel_size=3, stride=1, padding=1)
-
-
-
-    def forward(self, x):
-        # Encoder
-        x = self.conv1(x)
-        x = self.relu1(x)
-
-        x = self.conv2(x)
-        x = self.relu2(x)
-
-        x = self.conv3(x)
-        x = self.relu3(x)
-
-        x = self.conv4(x)
-        x = self.relu4(x)
-
-        x = self.conv5(x)
-        x = self.relu5(x)
-
-        x = self.conv6(x)
-
-        # Decoder
-        x = self.deconv1(x)
-        x = self.relu6(x)
-
-        x = self.deconv2(x)
-        x = self.relu7(x)
-
-        x = self.deconv3(x)
-        x = self.relu8(x)
-
-        x = self.deconv4(x)
-        x = self.relu9(x)
-
-        x = self.deconv5(x)
-        x = self.relu10(x)
-
-        x = self.deconv6(x)
-
-
-        return x
 
 def main(config):
     """Main function for training and evaluating the model.
@@ -191,12 +28,8 @@ def main(config):
     Args:
         config (dict): Dictionary of configurations.
     """
-
     # load conf file for training
     PREDICTION_DIR = config['prediction_dir']
-    REGULARIZATION = config['regularization']
-    MODEL_ARCHITECTURE = config['model_architecture']
-    DATA_AUGMENTATION = config['data_augmentation']
     SEED = config['seed']
     LR = float(config['lr'])
     BATCH_SIZE = config['batch_size']
@@ -206,6 +39,9 @@ def main(config):
     GPU_DEVICE = config['gpu_device']
     LOSS_FUNC = config['loss']
     AUTO_EVAL = config['auto_eval']
+    INPUT_PATH = config['input_path']
+    TARGET_PATH = config['target_path']
+    DATA_SPLIT = config['data_split']
 
     seed_everything(seed=SEED)
     start_training_date = datetime.datetime.now()
@@ -245,10 +81,6 @@ def main(config):
         train_tensorboard_writer = None
         val_tensorboard_writer = None
 
-
-
-    # model = ModifiedMobileNetV2()
-
     model = AutoencoderCNN()
 
     logger.info("Number of GPU(s) {}: ".format(torch.cuda.device_count()))
@@ -265,14 +97,17 @@ def main(config):
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    ds_inputs = xr.open_dataset("data_inputs.nc")
-    ds_target = xr.open_dataset("data_target.nc")
+    ds_inputs = xr.open_dataset(INPUT_PATH)
+    ds_target = xr.open_dataset(TARGET_PATH)
+    total_samples = len(ds_inputs['ssh'])
+    # Calculate the number of samples for the 80/20 split
+    train_samples = int(DATA_SPLIT[0]/100 * total_samples)
+    # Perform the split
+    ds_input_train = ds_inputs['ssh'][:train_samples]
+    ds_input_valid = ds_inputs['ssh'][train_samples:]
 
-    ds_input_train = ds_inputs['ssh'][:320]
-    ds_input_valid = ds_inputs['ssh'][320:]
-
-    ds_target_train = ds_target['ssh'][:320]
-    ds_target_valid = ds_target['ssh'][320:]
+    ds_target_train = ds_target['ssh'][:train_samples]
+    ds_target_valid = ds_target['ssh'][train_samples:]
 
     logger.info("Number of Training data {0:d}".format(len(ds_target_train)))
     logger.info("------")
@@ -298,7 +133,6 @@ def main(config):
 
         with tqdm(total=(len(train_dataset) - len(train_dataset) % BATCH_SIZE), ncols = 100, colour='#3eedc4') as t:
             t.set_description('epoch: {}/{}'.format(epoch, NUM_EPOCHS - 1))
-
             for data in train_dataloader:
 
                 optimizer.zero_grad()
@@ -317,71 +151,42 @@ def main(config):
                 step += 1
 
         model.eval()
-
         targets = []
         preds = []
-        # Model Evaluation
         for index, data in enumerate(eval_dataloader):
-
             inputs, target = data
             inputs = inputs.to(device, dtype=torch.float)
             target = target.to(device, dtype=torch.float)
-
-
             with torch.no_grad():
-
                 pred = model(inputs)
                 eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
 
             eval_losses.update(eval_loss.item(), len(inputs))
-
             target = torch.squeeze(target, 0)
             target = target.detach().cpu().numpy()[0,:,:]
-
             pred = torch.squeeze(pred,0)
             pred = pred.detach().cpu().numpy()[0,:,:]
-
             inputs = torch.squeeze(inputs,0)
             inputs = inputs.detach().cpu().numpy()[0,:,:]
 
             if index==20:
 
-                if False:
-                    # Normalize to 0-255 range if necessary
-                    input_image = (inputs - inputs.min()) / (inputs.max() - inputs.min()) * 255
-                    input_image = input_image.astype(np.uint8)
-
-                    pred_image = (pred - pred.min()) / (pred.max() - pred.min()) * 255
-                    pred_image = pred_image.astype(np.uint8)
-
-                    target_image = (target - target.min()) / (target.max() - target.min()) * 255
-                    target_image = target_image.astype(np.uint8)
-
-
-                    save_image = np.hstack((input_image, pred_image, target_image))
-                    save_image = to_pil_image(save_image)
-                    save_image.save(f'{prediction_dir}/input_epoch{epoch}_img{index}.png')
-
                 fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(25,5))
                 fig.suptitle(f'Epoch {epoch}')
                 inputs[inputs==0.001] = np.nan
-                im = ax1.pcolormesh(inputs,vmin=0,vmax=1)
+                im = ax1.pcolormesh(inputs, vmin=0,vmax=1)
                 plt.colorbar(im)
                 ax1.set_title('Input')
-                im = ax2.pcolormesh(pred,vmin=0,vmax=1)
+                im = ax2.pcolormesh(pred, vmin=0,vmax=1)
                 plt.colorbar(im)
                 ax2.set_title('Prediction')
-                im = ax3.pcolormesh(target,vmin=0,vmax=1)
+                im = ax3.pcolormesh(target, vmin=0,vmax=1)
                 plt.colorbar(im)
                 ax3.set_title('Target')
                 plt.savefig(f'{prediction_dir}/input_epoch{epoch}_img{index}.png')
 
-
-
-
             targets.append(target.flatten())
             preds.append(pred.flatten())
-
 
         rmse = root_mean_squared_error(targets, preds)
         metrics_dict[epoch] = { "rmse": rmse,
@@ -405,8 +210,8 @@ def main(config):
         dashboard = Dashboard(df_val_metrics)
         dashboard.generate_dashboard()
         dashboard.save_dashboard(directory_path=prediction_dir)
-    #     # Access the mean values
-    #     logger.info(f'Epoch {epoch} Eval {LOSS_FUNC} - Loss: {eval_losses.avg} - Acc {acc} - F1 {f1}')
+
+        logger.info(f'Epoch {epoch} Eval {LOSS_FUNC} - Loss: {eval_losses.avg} - rmse {rmse}')
 
     #     # Save best model
     #     if epoch == 0:

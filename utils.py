@@ -1,15 +1,25 @@
 import os
-import pandas as pd
-import torch
-import seaborn as sns
+import random
 
-from bokeh.plotting import figure, show
+import numpy as np
+import seaborn as sns
+import torch
 from bokeh.layouts import gridplot
-from bokeh.models import ColumnDataSource
 from bokeh.palettes import Category10
 from bokeh.plotting import figure, output_file, save
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix
+
+
+def seed_everything(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 def plot_confusion_matrix(y_pred, y_true, save_path):
     """
@@ -58,6 +68,7 @@ def plot_loss_metrics(metrics, save_path):
     plt.tight_layout()
     plt.savefig(os.path.join(save_path,"loss.png"))  # Save the plot as an image
     plt.show()
+
 
 class AverageMeter(object):
     def __init__(self):
