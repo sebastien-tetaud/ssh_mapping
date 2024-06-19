@@ -141,7 +141,7 @@ def main(config):
                 loss_train.backward()
                 optimizer.step()
                 train_losses.update(loss_train.item(), len(inputs))
-                from train_logs import train_log
+                # from train_logs import train_log
                 # train_log(step=step, loss=loss_train, tensorboard_writer=train_tensorboard_writer, name="Training")
                 t.set_postfix(loss='{:.6f}'.format(train_losses.avg))
                 t.update(len(inputs))
@@ -150,6 +150,7 @@ def main(config):
         model.eval()
         targets = []
         preds = []
+
         for index, data in enumerate(eval_dataloader):
             inputs, target = data
             inputs = inputs.to(device, dtype=torch.float)

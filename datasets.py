@@ -240,21 +240,24 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
-        x[np.isnan(x)] = 0.01
+
         y = self.ds_target[index].values
-        # x , y = data_augmentation(x,y)
 
-        # x = cv2.merge((x, x, x))
 
+        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+
+        x_norm[np.isnan(x_norm)] = 0.001
 
         transform = transforms.Compose([
             transforms.ToTensor()])
 
-        x = transform(x)
+        x_norm = transform(x_norm)
 
-        y = torch.tensor(y, dtype=torch.float32).unsqueeze(0)
+        y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)
 
-        return x, y
+        return x_norm, y_norm
 
     def __len__(self):
         return len(self.ds_inputs)

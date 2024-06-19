@@ -9,7 +9,62 @@ from bokeh.palettes import Category10
 from bokeh.plotting import figure, output_file, save
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix
+from models import AutoencoderCNN
 
+def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=False):
+    """
+    Load a specified model from a checkpoint and prepare it for use.
+
+    Parameters:
+    - checkpoint_path (str): Path to the checkpoint file (.pth) containing the model's state dictionary.
+    - model_architecture (str): The name of the model to load. Supported models include:
+      - 'AutoencoderCNN': Loads an instance of the AutoencoderCNN model.
+      Add more models here as needed.
+    - device (str, optional): The device on which to load the model. Options are 'cuda' for GPU or 'cpu'.
+      Default is 'cuda'. If 'cuda' is chosen but not available, it falls back to 'cpu'.
+    - model_eval (bool, optional): If True, sets the model to evaluation mode (`model.eval()`).
+      Default is False.
+
+    Returns:
+    - model (torch.nn.Module): The loaded model, moved to the specified device.
+    - device (torch.device): The device on which the model is loaded.
+
+    Raises:
+    - ValueError: If an unsupported model_name is provided.
+
+    Example usage:
+    ```python
+    model, device = load_model(
+        checkpoint_path="/path/to/checkpoint.pth",
+        model_name="AutoencoderCNN",
+        device='cuda',
+        model_eval=True
+    )
+    print(f"Model loaded on device: {device}")
+    ```
+    """
+    if model_architecture == "AutoencoderCNN":
+        # Initialize the model
+        model = AutoencoderCNN()
+    else:
+        raise ValueError(f"Unsupported model_name: {model_architecture}")
+
+    # Load the checkpoint
+    checkpoint = torch.load(checkpoint_path)
+
+    # Load the model state
+    model.load_state_dict(checkpoint)
+
+    if model_eval:
+        # Set the model to evaluation mode
+        model.eval()
+        print("Model set to evaluation mode")
+
+    # Move the model to the specified device
+    device = torch.device(device if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
+    return model, device
 
 def seed_everything(seed=42):
     random.seed(seed)
