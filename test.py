@@ -102,5 +102,10 @@ def test(config_file, checkpoint_path, prediction_dir):
         inputs = inputs.detach().cpu().numpy()[0,:,:]
         log_prediction_plot(inputs, pred, target, index, prediction_dir)
 
+        # Hi hey ho Metrics 1
+        # pred, inputs and target are detached from the gpu and transfert to cpu
+        # their shape is (100,100) -> numpy array
+        # Tu peux call tes N metrics ici et save dans un json
+
 
 
