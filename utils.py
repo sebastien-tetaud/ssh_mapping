@@ -1,6 +1,6 @@
 import os
 import random
-
+import json
 import numpy as np
 import seaborn as sns
 import torch
@@ -10,6 +10,8 @@ from bokeh.plotting import figure, output_file, save
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix
 from models import AutoencoderCNN
+from loguru import logger
+
 
 def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=False):
     """
@@ -65,6 +67,26 @@ def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=Fa
     model = model.to(device)
 
     return model, device
+
+
+def save_config(prediction_dir, config):
+    """
+    Save the configuration dictionary to a JSON file in the specified directory.
+
+    Parameters:
+    - prediction_dir (str): The directory where the config.json file will be saved.
+    - config (dict): The configuration dictionary to save.
+    """
+
+    # Define the path to the config file
+    config_path = os.path.join(prediction_dir, "config.json")
+
+    # Write the config dictionary to the JSON file
+    with open(config_path, 'w') as fp:
+        json.dump(config, fp, indent=4)  # indent=4 for pretty printing
+
+    logger.info(f"Configuration saved to {config_path}")
+
 
 def seed_everything(seed=42):
     random.seed(seed)

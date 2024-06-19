@@ -61,38 +61,46 @@ def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=Fa
     # Move the model to the specified device
     device = torch.device(device if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-
     return model, device
 
 
-checkpoint_path = "/workspace/project/ssh_mapping/training_prediction/2024_06_19_08_57_22/best.pth"
-model_architecture = "AutoencoderCNN"
-model, device = load_model(checkpoint_path, model_architecture, device='cuda', model_eval=True)
-nb_parameters = count_model_parameters(model=model)
-logger.info(f"Model is on Cuda: {next(model.parameters()).is_cuda}")
-logger.info("Number of parameters {}: ".format(nb_parameters))
+def test(config_file, checkpoint_path, prediction_dir):
 
-INPUT_PATH = "/workspace/project/ssh_mapping/data_inputs_10days.nc"
-TARGET_PATH = "/workspace/project/ssh_mapping/data_target.nc"
-ds_inputs = xr.open_dataset(INPUT_PATH)['ssh'][:10]
-ds_target = xr.open_dataset(TARGET_PATH)['ssh'][:10]
 
-prediction_dir = "/workspace/project/ssh_mapping/training_prediction/2024_06_19_08_57_22/prediction"
+    model_architecture = config_file["model_architecture"]
+    test_start = config_file["test_start"]
+    test_end = config_file["test_end"]
+    input_path = config_file["input_path"]
+    target_path = config_file["target_path"]
 
-test_dataset = TestDataset(ds_inputs=ds_inputs,ds_target=ds_target)
-test_dataloader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False, num_workers=0)
+    model, device = load_model(checkpoint_path, model_architecture, device='cuda', model_eval=True)
+    nb_parameters = count_model_parameters(model=model)
+    logger.info(f"Model is on Cuda: {next(model.parameters()).is_cuda}")
+    logger.info("Number of parameters {}: ".format(nb_parameters))
 
-for index, data in enumerate(tqdm(test_dataloader, ncols=100, colour='#FF33EC')):
-    inputs, target = data
-    inputs = inputs.to(device, dtype=torch.float)
-    target = target.to(device, dtype=torch.float)
-    with torch.no_grad():
-        pred = model(inputs)
+    ds_inputs = xr.open_dataset(input_path)
+    ds_target = xr.open_dataset(target_path)
 
-    target = torch.squeeze(target, 0)
-    target = target.detach().cpu().numpy()[0,:,:]
-    pred = torch.squeeze(pred,0)
-    pred = pred.detach().cpu().numpy()[0,:,:]
-    inputs = torch.squeeze(inputs,0)
-    inputs = inputs.detach().cpu().numpy()[0,:,:]
-    log_prediction_plot(inputs, pred, target, index, prediction_dir)
+    ds_inputs = ds_inputs.sel(time=slice(test_start, test_end))['ssh']
+    ds_target = ds_target.sel(time=slice(test_start, test_end))['ssh']
+
+    test_dataset = TestDataset(ds_inputs=ds_inputs,ds_target=ds_target)
+    test_dataloader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False, num_workers=0)
+
+    for index, data in enumerate(tqdm(test_dataloader, ncols=100, colour='#FF33EC')):
+        inputs, target = data
+        inputs = inputs.to(device, dtype=torch.float)
+        target = target.to(device, dtype=torch.float)
+        with torch.no_grad():
+            pred = model(inputs)
+
+        target = torch.squeeze(target, 0)
+        target = target.detach().cpu().numpy()[0,:,:]
+        pred = torch.squeeze(pred,0)
+        pred = pred.detach().cpu().numpy()[0,:,:]
+        inputs = torch.squeeze(inputs,0)
+        inputs = inputs.detach().cpu().numpy()[0,:,:]
+        log_prediction_plot(inputs, pred, target, index, prediction_dir)
+
+
+

@@ -39,6 +39,9 @@ def main(config):
     INPUT_PATH = config['input_path']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']
+    TRAIN_START = config['train_start']
+    TRAIN_END = config['train_end']
+
 
     seed_everything(seed=SEED)
     start_training_date = datetime.datetime.now()
@@ -96,6 +99,11 @@ def main(config):
 
     ds_inputs = xr.open_dataset(INPUT_PATH)
     ds_target = xr.open_dataset(TARGET_PATH)
+    # slice data related to the challange
+    # https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
+    ds_inputs = ds_inputs.sel(time=slice(TRAIN_START, TRAIN_END))
+    ds_target = ds_target.sel(time=slice(TRAIN_START, TRAIN_END))
+
     total_samples = len(ds_inputs['ssh'])
     # Calculate the number of samples for the 80/20 split
     train_samples = int(DATA_SPLIT[0]/100 * total_samples)
@@ -197,9 +205,9 @@ def main(config):
             df_val_metrics = pd.concat([df_val_metrics, df_mean_metrics])
             df_val_metrics = df_val_metrics.reset_index(drop=True)
 
-        dashboard = Dashboard(df_val_metrics)
-        dashboard.generate_dashboard()
-        dashboard.save_dashboard(directory_path=prediction_dir)
+        # dashboard = Dashboard(df_val_metrics)
+        # dashboard.generate_dashboard()
+        # dashboard.save_dashboard(directory_path=prediction_dir)
 
         logger.info(f'Epoch {epoch} Eval {LOSS_FUNC} - Loss: {eval_losses.avg} - rmse {rmse}')
 
@@ -219,7 +227,8 @@ def main(config):
             best_weights = copy.deepcopy(model.state_dict())
 
     logger.info(f'best epoch: {best_epoch}, best RMSE: {best_rmse} loss: {best_loss}')
-    torch.save(best_weights, os.path.join(prediction_dir, 'best.pth'))
+    model_path = os.path.join(prediction_dir, 'best.pth')
+    torch.save(best_weights, model_path)
     logger.info('Training Done')
     logger.info('best epoch: {}, {} loss: {:.2f}'.format( best_epoch, LOSS_FUNC, best_loss))
     end_training_date = datetime.datetime.now()
@@ -231,6 +240,10 @@ def main(config):
     logger.info("model size: {}".format(model_size))
     df_val_metrics['model_size'] = model_size
     df_val_metrics.to_csv(os.path.join(prediction_dir, 'valid_metrics_log.csv'))
+
+    save_config(prediction_dir=prediction_dir, config=config)
+    from test import test
+    test(config_file=config, checkpoint_path=model_path, prediction_dir=prediction_dir)
 
 if __name__ == '__main__':
 
