@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,5 +16,5 @@ def log_prediction_plot(inputs, pred, target, epoch, prediction_dir):
     im = ax3.pcolormesh(target, vmin=0,vmax=1)
     plt.colorbar(im)
     ax3.set_title('Target')
-    plt.savefig(f'{prediction_dir}/input_epoch{epoch}.png')
+    plt.savefig(f'{prediction_dir}/input_epoch_{epoch}.png')
 

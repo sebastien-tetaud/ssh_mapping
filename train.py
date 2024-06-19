@@ -56,9 +56,11 @@ def main(config):
 
     if not os.path.exists(PREDICTION_DIR):
         os.makedirs(PREDICTION_DIR)
-
     prediction_dir = os.path.join(PREDICTION_DIR, '{}'.format(date))
     os.makedirs(prediction_dir)
+    train_dir = os.path.join(prediction_dir,"train_inference")
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
     log_filename = os.path.join(prediction_dir, "train.log")
     logger.add(log_filename, backtrace=False, diagnose=True)
 
@@ -178,7 +180,7 @@ def main(config):
             from train_logs import log_prediction_plot
             if index==20:
 
-                log_prediction_plot(inputs, pred, target, epoch, prediction_dir)
+                log_prediction_plot(inputs, pred, target, epoch, train_dir)
 
             targets.append(target.flatten())
             preds.append(pred.flatten())

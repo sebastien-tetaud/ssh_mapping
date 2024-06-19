@@ -6,8 +6,8 @@ target_path: /workspace/project/ssh_mapping/data_target.nc
 test_start: "2012-10-22"
 test_end: "2012-12-02"
 
-train_start: "2012-10-22"
-train_end: "2012-12-02"
+train_start: "2013-01-02"
+train_end: "2013-09-30"
 
 data_split: [90,10]
 pretrained: True
@@ -18,7 +18,7 @@ loss: "MSE"
 gpu_device: 0
 lr: 1e-4
 batch_size: 32
-epochs: 200
+epochs: 10
 workers: 8
 seed: 123
 tbp: 8888

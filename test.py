@@ -4,6 +4,7 @@ from loguru import logger
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 from datasets import TestDataset
+import os
 from models import AutoencoderCNN
 from train_logs import log_prediction_plot
 from utils import count_model_parameters
@@ -73,6 +74,10 @@ def test(config_file, checkpoint_path, prediction_dir):
     input_path = config_file["input_path"]
     target_path = config_file["target_path"]
 
+    test_dir = os.path.join(prediction_dir,"test_inference")
+    if not os.path.exists(test_dir):
+        os.makedirs(test_dir)
+
     model, device = load_model(checkpoint_path, model_architecture, device='cuda', model_eval=True)
     nb_parameters = count_model_parameters(model=model)
     logger.info(f"Model is on Cuda: {next(model.parameters()).is_cuda}")
@@ -100,7 +105,7 @@ def test(config_file, checkpoint_path, prediction_dir):
         pred = pred.detach().cpu().numpy()[0,:,:]
         inputs = torch.squeeze(inputs,0)
         inputs = inputs.detach().cpu().numpy()[0,:,:]
-        log_prediction_plot(inputs, pred, target, index, prediction_dir)
+        log_prediction_plot(inputs, pred, target, index, test_dir)
 
         # Hi hey ho Metrics 1
         # pred, inputs and target are detached from the gpu and transfert to cpu
