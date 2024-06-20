@@ -16,3 +16,4 @@ xarray
 loguru
 albumentations
 seaborn
+xrft

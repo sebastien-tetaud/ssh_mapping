@@ -36,7 +36,7 @@ def main(config):
     GPU_DEVICE = config['gpu_device']
     LOSS_FUNC = config['loss']
     AUTO_EVAL = config['auto_eval']
-    INPUT_PATH = config['input_path']
+    INPUTS_PATH = config['inputs_path']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
@@ -99,7 +99,7 @@ def main(config):
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    ds_inputs = xr.open_dataset(INPUT_PATH)
+    ds_inputs = xr.open_dataset(INPUTS_PATH)
     ds_target = xr.open_dataset(TARGET_PATH)
     # slice data related to the challange
     # https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
