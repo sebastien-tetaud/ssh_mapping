@@ -36,7 +36,7 @@ def main(config):
     GPU_DEVICE = config['gpu_device']
     LOSS_FUNC = config['loss']
     AUTO_EVAL = config['auto_eval']
-    INPUT_PATH = config['input_path']
+    INPUTS_PATH = config['inputs_path']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
@@ -56,9 +56,11 @@ def main(config):
 
     if not os.path.exists(PREDICTION_DIR):
         os.makedirs(PREDICTION_DIR)
-
     prediction_dir = os.path.join(PREDICTION_DIR, '{}'.format(date))
     os.makedirs(prediction_dir)
+    train_dir = os.path.join(prediction_dir,"train_inference")
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
     log_filename = os.path.join(prediction_dir, "train.log")
     logger.add(log_filename, backtrace=False, diagnose=True)
 
@@ -97,7 +99,7 @@ def main(config):
 
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    ds_inputs = xr.open_dataset(INPUT_PATH)
+    ds_inputs = xr.open_dataset(INPUTS_PATH)
     ds_target = xr.open_dataset(TARGET_PATH)
     # slice data related to the challange
     # https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
@@ -178,7 +180,7 @@ def main(config):
             from train_logs import log_prediction_plot
             if index==20:
 
-                log_prediction_plot(inputs, pred, target, epoch, prediction_dir)
+                log_prediction_plot(inputs, pred, target, epoch, train_dir)
 
             targets.append(target.flatten())
             preds.append(pred.flatten())
