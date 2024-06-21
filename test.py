@@ -11,67 +11,14 @@ from train_logs import log_prediction_plot
 from utils import count_model_parameters
 import yaml
 import diags
-
-def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=False):
-    """
-    Load a specified model from a checkpoint and prepare it for use.
-
-    Parameters:
-    - checkpoint_path (str): Path to the checkpoint file (.pth) containing the model's state dictionary.
-    - model_name (str): The name of the model to load. Supported models include:
-      - 'AutoencoderCNN': Loads an instance of the AutoencoderCNN model.
-      Add more models here as needed.
-    - device (str, optional): The device on which to load the model. Options are 'cuda' for GPU or 'cpu'.
-      Default is 'cuda'. If 'cuda' is chosen but not available, it falls back to 'cpu'.
-    - model_eval (bool, optional): If True, sets the model to evaluation mode (`model.eval()`).
-      Default is False.
-
-    Returns:
-    - model (torch.nn.Module): The loaded model, moved to the specified device.
-    - device (torch.device): The device on which the model is loaded.
-
-    Raises:
-    - ValueError: If an unsupported model_name is provided.
-
-    Example usage:
-    ```python
-    model, device = load_model(
-        checkpoint_path="/path/to/checkpoint.pth",
-        model_name="AutoencoderCNN",
-        device='cuda',
-        model_eval=True
-    )
-    print(f"Model loaded on device: {device}")
-    ```
-    """
-    if model_architecture == "AutoencoderCNN":
-        # Initialize the model
-        model = AutoencoderCNN()
-    else:
-        raise ValueError(f"Unsupported model_name: {model_architecture}")
-
-    # Load the checkpoint
-    checkpoint = torch.load(checkpoint_path)
-
-    # Load the model state
-    model.load_state_dict(checkpoint)
-
-    if model_eval:
-        # Set the model to evaluation mode
-        model.eval()
-        logger.info("Model set to evaluation mode")
-
-    # Move the model to the specified device
-    device = torch.device(device if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    return model, device
+from utils import load_model
 
 def prediction(test_dataloader, device, model, ymin, ymax):
 
     list_pred = []
 
     for data in tqdm(test_dataloader, ncols=100, colour='#FF33EC'):
-    
+
         inputs, _ = data
         inputs = inputs.to(device, dtype=torch.float)
         with torch.no_grad():
@@ -79,10 +26,10 @@ def prediction(test_dataloader, device, model, ymin, ymax):
         pred = torch.squeeze(pred,0)
         pred = pred.detach().cpu().numpy()[0,:,:]
 
-        # Back to real values before normalization 
+        # Back to real values before normalization
         # We should create a specific function for normalization and associated de-normalization
         pred = (pred - 0.01) * (ymax - ymin) + ymin
-        
+
         # Append to list
         list_pred.append(pred)
 
@@ -98,10 +45,10 @@ def test(config_file, checkpoint_path, prediction_dir):
     target_path = config_file["target_path"]
     name_var_inputs = config_file["name_var_inputs"]
     name_var_target = config_file["name_var_target"]
-    name_diag = config['name_diag']
-    write_netcdf = config['write_netcdf']
-    animate = config['animate']
-    compute_metrics = config['compute_metrics']
+    name_diag = config_file['name_diag']
+    write_netcdf = config_file['write_netcdf']
+    animate = config_file['animate']
+    compute_metrics = config_file['compute_metrics']
 
     test_dir = os.path.join(prediction_dir,"test_inference")
     if not os.path.exists(test_dir):

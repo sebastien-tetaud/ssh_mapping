@@ -41,6 +41,7 @@ def main(config):
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
     TRAIN_END = config['train_end']
+    MODEL_ARCHITECTURE = config['model_architecture']
 
 
     seed_everything(seed=SEED)
@@ -83,7 +84,8 @@ def main(config):
         train_tensorboard_writer = None
         val_tensorboard_writer = None
 
-    model = AutoencoderCNN()
+
+    model = getattr(models, MODEL_ARCHITECTURE)()
 
     logger.info("Number of GPU(s) {}: ".format(torch.cuda.device_count()))
     logger.info("GPU(s) in used {}: ".format(GPU_DEVICE))
