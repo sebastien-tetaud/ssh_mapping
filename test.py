@@ -71,7 +71,7 @@ def prediction(test_dataloader, device, model, ymin, ymax):
     list_pred = []
 
     for data in tqdm(test_dataloader, ncols=100, colour='#FF33EC'):
-    
+
         inputs, _ = data
         inputs = inputs.to(device, dtype=torch.float)
         with torch.no_grad():
@@ -79,10 +79,10 @@ def prediction(test_dataloader, device, model, ymin, ymax):
         pred = torch.squeeze(pred,0)
         pred = pred.detach().cpu().numpy()[0,:,:]
 
-        # Back to real values before normalization 
+        # Back to real values before normalization
         # We should create a specific function for normalization and associated de-normalization
         pred = (pred - 0.01) * (ymax - ymin) + ymin
-        
+
         # Append to list
         list_pred.append(pred)
 
@@ -98,10 +98,10 @@ def test(config_file, checkpoint_path, prediction_dir):
     target_path = config_file["target_path"]
     name_var_inputs = config_file["name_var_inputs"]
     name_var_target = config_file["name_var_target"]
-    name_diag = config['name_diag']
-    write_netcdf = config['write_netcdf']
-    animate = config['animate']
-    compute_metrics = config['compute_metrics']
+    name_diag = config_file['name_diag']
+    write_netcdf = config_file['write_netcdf']
+    animate = config_file['animate']
+    compute_metrics = config_file['compute_metrics']
 
     test_dir = os.path.join(prediction_dir,"test_inference")
     if not os.path.exists(test_dir):
