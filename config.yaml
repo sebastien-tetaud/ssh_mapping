@@ -16,15 +16,21 @@ pretrained: True
 
 model_architecture: AutoencoderCNN
 log_dir: "log"
-loss: "MSE"
+loss: "QGLoss"
 gpu_device: 0
 lr: 1e-4
 batch_size: 32
-epochs: 50
+epochs: 200
 workers: 8
 seed: 123
 tbp: 8888
 auto_eval: True
+
+# Parameters for QG loss
+c: 2.7
+dt: 900
+alpha: .5
+Nh: 1
 
 name_diag: Diag_OSSE
 write_netcdf: True

@@ -106,7 +106,7 @@ def test(config_file, checkpoint_path, prediction_dir):
     test_dir = os.path.join(prediction_dir,"test_inference")
     if not os.path.exists(test_dir):
         os.makedirs(test_dir)
-
+    
     model, device = load_model(checkpoint_path, model_architecture, device='cuda', model_eval=True)
     nb_parameters = count_model_parameters(model=model)
     logger.info(f"Model is on Cuda: {next(model.parameters()).is_cuda}")
@@ -150,5 +150,5 @@ if __name__ == '__main__':
         except yaml.YAMLError as exc:
             logger.info(exc)
 
-    test(config, 'training_inference/2024_06_20_08_55_57/best.pth', 'training_inference/2024_06_20_08_55_57')
+    test(config, 'training_inference/2024_06_21_13_52_44/best.pth', 'training_inference/2024_06_21_13_52_44')
 

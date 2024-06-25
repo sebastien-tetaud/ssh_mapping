@@ -16,7 +16,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from datasets import EvalDataset, TrainDataset
-from models import AutoencoderCNN
+import models
+import customLosses
 from utils import *
 
 def main(config):
@@ -27,6 +28,7 @@ def main(config):
     """
     # load conf file for training
     PREDICTION_DIR = config['prediction_dir']
+    MODEL_ARCHITECTURE = config['model_architecture']
     SEED = config['seed']
     LR = float(config['lr'])
     BATCH_SIZE = config['batch_size']
@@ -83,7 +85,7 @@ def main(config):
         train_tensorboard_writer = None
         val_tensorboard_writer = None
 
-    model = AutoencoderCNN()
+    model = getattr(models, MODEL_ARCHITECTURE)()
 
     logger.info("Number of GPU(s) {}: ".format(torch.cuda.device_count()))
     logger.info("GPU(s) in used {}: ".format(GPU_DEVICE))
@@ -94,9 +96,6 @@ def main(config):
     logger.info("Number of parameters {}: ".format(nb_parameters))
 
     # Define Optimizer
-    if LOSS_FUNC == "MSE":
-        criterion = nn.MSELoss()
-
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
     ds_inputs = xr.open_dataset(INPUTS_PATH)
@@ -124,7 +123,17 @@ def main(config):
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
     eval_dataset = EvalDataset(ds_inputs=ds_input_valid,ds_target=ds_target_valid)
-    eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1, shuffle=False, num_workers=0)
+    eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+
+    # Loss functions
+    if LOSS_FUNC == "MSE":
+        criterion = nn.MSELoss()
+    elif LOSS_FUNC == "RMSELoss":
+        # Initialize Quasi-Geostrophic loss function
+        criterion = customLosses.RMSELoss()
+    elif LOSS_FUNC == "QGLoss":
+        # Initialize Quasi-Geostrophic loss function
+        criterion = customLosses.QGLoss(lon=torch.tensor(ds_target['lon'].values), lat=torch.tensor(ds_target['lat'].values), dt=config['dt'], c=config['c'], device=device, alpha=config['alpha'], Nh=config['Nh'])
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -147,8 +156,9 @@ def main(config):
                 targets = targets.to(device, dtype=torch.float)
 
                 preds = model(inputs)
-                loss_train = torch.sqrt(criterion(preds.to(torch.float32), targets.to(torch.float32)))
+                loss_train = criterion(preds, targets)
                 loss_train.backward()
+
                 optimizer.step()
                 train_losses.update(loss_train.item(), len(inputs))
                 # from train_logs import train_log
@@ -165,21 +175,24 @@ def main(config):
             inputs, target = data
             inputs = inputs.to(device, dtype=torch.float)
             target = target.to(device, dtype=torch.float)
+
             with torch.no_grad():
                 pred = model(inputs)
-                eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
+                eval_loss = criterion(pred, target)
 
             eval_losses.update(eval_loss.item(), len(inputs))
-            target = torch.squeeze(target, 0)
-            target = target.detach().cpu().numpy()[0,:,:]
-            pred = torch.squeeze(pred,0)
-            pred = pred.detach().cpu().numpy()[0,:,:]
-            inputs = torch.squeeze(inputs,0)
-            inputs = inputs.detach().cpu().numpy()[0,:,:]
+
+            i = int(BATCH_SIZE//2)
+
+            target = torch.squeeze(target, 1)
+            target = target.detach().cpu().numpy()[i,:,:]
+            pred = torch.squeeze(pred,1)
+            pred = pred.detach().cpu().numpy()[i,:,:]
+            inputs = torch.squeeze(inputs,1)
+            inputs = inputs.detach().cpu().numpy()[i,:,:]
 
             from train_logs import log_prediction_plot
-            if index==20:
-
+            if index==0:
                 log_prediction_plot(inputs, pred, target, epoch, train_dir)
 
             targets.append(target.flatten())

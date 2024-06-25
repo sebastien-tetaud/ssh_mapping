@@ -11,9 +11,9 @@ def gaspari_cohn(r, c):
     Returns:  smoothed values 
     """ 
     if isinstance(r, (float, int)):
-        ra = torch.tensor([r], dtype=torch.float64)
+        ra = torch.tensor([r], dtype=torch.float)
     else:
-        ra = torch.tensor(r, dtype=torch.float64)
+        ra = torch.tensor(r, dtype=torch.float)
         
     if c <= 0:
         return torch.zeros_like(ra)
@@ -34,6 +34,24 @@ def gaspari_cohn(r, c):
             
     return gp
 
+def lonlat2dxdy(lon,lat):
+    dlon = torch.gradient(lon)
+    dlat = torch.gradient(lat)
+    dx = torch.sqrt((dlon[1]*111000*torch.cos(torch.deg2rad(lat)))**2
+                 + (dlat[1]*111000)**2)
+    dy = torch.sqrt((dlon[0]*111000*torch.cos(torch.deg2rad(lat)))**2
+                 + (dlat[0]*111000)**2)
+    dx[0,:] = dx[1,:]
+    dx[-1,: ]= dx[-2,:] 
+    dx[:,0] = dx[:,1]
+    dx[:,-1] = dx[:,-2]
+    dy[0,:] = dy[1,:]
+    dy[-1,:] = dy[-2,:] 
+    dy[:,0] = dy[:,1]
+    dy[:,-1] = dy[:,-2]
+    
+    return dx,dy
+
 def dstI1D(x, norm='ortho'):
     """1D type-I discrete sine transform."""
     return torch.fft.irfft(-1j * torch.nn.functional.pad(x, (1, 1)), norm=norm)[...,1:x.shape[-1]+1]
@@ -45,7 +63,7 @@ def dstI2D(x, norm='ortho'):
 def inverse_elliptic_dst(f, operator_dst):
     """Inverse elliptic operator (e.g. Laplace, Helmoltz)
     using float32 discrete sine transform."""
-    return dstI2D(dstI2D(f.double()) / operator_dst)
+    return dstI2D(dstI2D(f) / operator_dst)
 
 
 class Qgm:
@@ -53,48 +71,55 @@ class Qgm:
     ###########################################################################
     #                             Initialization                              #
     ###########################################################################
-    def __init__(self, dx=None, dy=None, dt=None, SSH=None, c=None, g=9.81, f=1e-4, Kdiffus=None, device='cpu'):
+    def __init__(self, lon=None, lat=None, dt=None, SSH=None, c=None, g=9.81, f=None, Kdiffus=None, device='cpu'):
 
-        # Grid shape
+        # Coordinates
+        if len(lon.shape)==1:
+            lon,lat = torch.meshgrid(lon,lat) 
+        dx,dy = lonlat2dxdy(lon,lat)
+
+        # Grid shapeet y
         ny, nx = dx.shape
         self.nx = nx
         self.ny = ny
 
         # Grid spacing
         dx = dy = (torch.nanmean(dx) + torch.nanmean(dy)) / 2
-        self.dx = dx.double()
-        self.dy = dy.double()
-
+        self.dx = dx
+        self.dy = dy
         # Time step
         self.dt = dt
 
         # Gravity
-        self.g = torch.tensor(g).to(device=device)
+        self.g = torch.tensor(g).to(device=device, dtype=torch.float)
 
         # Coriolis
         if hasattr(f, "__len__"):
-            self.f = (torch.nanmean(torch.tensor(f)) * torch.ones((self.ny, self.nx))).double().to(device=device)
+            self.f = (torch.nanmean(torch.tensor(f)) * torch.ones((self.ny, self.nx)))
+        elif f is not None:
+            self.f = (f * torch.ones((self.ny, self.nx)))
         else:
-            self.f = (f * torch.ones((self.ny, self.nx))).double().to(device=device)
+            self.f = 4*torch.pi/86164*torch.sin(lat*torch.pi/180)
+        self.f = self.f.to(device=device, dtype=torch.float)
 
         # Rossby radius
         if hasattr(c, "__len__"):
-            self.c = (torch.nanmean(torch.tensor(c)) * torch.ones((self.ny, self.nx))).double().to(device=device)
+            self.c = (torch.nanmean(torch.tensor(c)) * torch.ones((self.ny, self.nx))).to(device=device, dtype=torch.float)
         else:
-            self.c = (c * torch.ones((self.ny, self.nx))).double().to(device=device)
+            self.c = (c * torch.ones((self.ny, self.nx))).to(device=device, dtype=torch.float)
 
         # Elliptical inversion operator
-        x, y = torch.meshgrid(torch.arange(1, nx - 1, dtype=torch.float64),
-                              torch.arange(1, ny - 1, dtype=torch.float64))
-        x = x.to(device=device)
-        y = y.to(device=device)
+        x, y = torch.meshgrid(torch.arange(1, nx - 1, dtype=torch.float),
+                              torch.arange(1, ny - 1, dtype=torch.float))
+        x = x.to(device=device, dtype=torch.float)
+        y = y.to(device=device, dtype=torch.float)
         laplace_dst = 2 * (torch.cos(torch.pi / (nx - 1) * x) - 1) / self.dx ** 2 + \
                       2 * (torch.cos(torch.pi / (ny - 1) * y) - 1) / self.dy ** 2
         self.helmoltz_dst = self.g / self.f.mean() * laplace_dst - self.g * self.f.mean() / self.c.mean() ** 2
 
         # get land pixels
         if SSH is not None:
-            isNAN = torch.isnan(SSH).to(device=device)
+            isNAN = torch.isnan(SSH).to(device=device, dtype=torch.bool)
         else:
             isNAN = None
 
@@ -103,7 +128,7 @@ class Qgm:
         ################
 
         # mask=3 away from the coasts
-        mask = torch.zeros((ny, nx), dtype=torch.int64) + 3
+        mask = torch.zeros((ny, nx), dtype=torch.int) + 3
 
         # mask=1 for borders of the domain 
         mask[0, :] = 1
@@ -121,7 +146,7 @@ class Qgm:
 
         # mask=0 on land 
         if isNAN is not None:
-            mask[isNAN] = 0
+            mask[isNAN] = 0.
             indNan = torch.argwhere(isNAN)
             for i, j in indNan:
                 for p1 in range(-2, 3):
@@ -136,11 +161,11 @@ class Qgm:
                             elif (mask[itest, jtest] == 3):
                                 mask[itest, jtest] = 2
 
-        self.mask = mask.to(device=device)
-        self.ind0 = (mask == 0).to(device=device)
-        self.ind1 = (mask == 1).to(device=device)
-        self.ind2 = (mask == 2).to(device=device)
-        self.ind12 = (self.ind1 + self.ind2).to(device=device)
+        self.mask = mask.to(device=device, dtype=torch.int)
+        self.ind0 = (mask == 0).to(device=device, dtype=torch.bool)
+        self.ind1 = (mask == 1).to(device=device, dtype=torch.bool)
+        self.ind2 = (mask == 2).to(device=device, dtype=torch.bool)
+        self.ind12 = (self.ind1 + self.ind2).to(device=device, dtype=torch.bool)
 
         # Diffusion coefficient 
         self.Kdiffus = Kdiffus
@@ -181,7 +206,7 @@ class Qgm:
         if c is None:
             c = self.c
 
-        q = torch.zeros_like(h)
+        q = torch.zeros_like(h, dtype=torch.float)
 
         q[..., 1:-1, 1:-1] = (
             self.g / self.f[None, 1:-1, 1:-1] * 
@@ -191,7 +216,6 @@ class Qgm:
         )
 
         q = torch.where(torch.isnan(q), torch.tensor(0.0), q)
-
         q[..., self.ind12] = - self.g * self.f[None,self.ind12] / (c[None,self.ind12] ** 2) * hbc[...,self.ind12]
         q[..., self.ind0] = 0
 
@@ -239,7 +263,7 @@ class Qgm:
             3rd-order upwind scheme.
         """
 
-        res = torch.zeros_like(var0, dtype=torch.float64)
+        res = torch.zeros_like(var0, dtype=torch.float)
 
         res[..., 2:-2,2:-2] = \
             - up[..., 1:-1, 1:-1] * 1 / (6 * self.dx) * \
@@ -259,7 +283,7 @@ class Qgm:
         """
         qin = q[..., 1:-1, 1:-1] - qb[..., 1:-1, 1:-1]
 
-        hrec = torch.zeros_like(q, dtype=torch.float64)
+        hrec = torch.zeros_like(q, dtype=torch.float)
         inv = inverse_elliptic_dst(qin, self.helmoltz_dst)
         hrec[..., 1:-1, 1:-1] = inv
 

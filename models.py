@@ -81,7 +81,6 @@ class AutoencoderCNN(nn.Module):
 
         return x
 
-
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
