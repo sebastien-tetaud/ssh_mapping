@@ -144,7 +144,6 @@ def main():
 
                 optimizer.zero_grad()
                 inputs, targets = data
-                print(inputs.shape)
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
 
