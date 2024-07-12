@@ -3,6 +3,7 @@ prediction_dir: training_inference/
 # inputs_path: data_inputs_224_10days.nc
 # target_path: data_target_224_10days.nc
 inputs_path: data_inputs.nc
+# inputs_path: data_inputs_5days.nc
 target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
@@ -22,7 +23,7 @@ loss: "MSE"
 gpu_device: 0
 lr: 1e-4
 batch_size: 8
-epochs: 100
+epochs: 200
 workers: 8
 seed: 123
 tbp: 8888
