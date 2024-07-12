@@ -9,9 +9,23 @@ from bokeh.palettes import Category10
 from bokeh.plotting import figure, output_file, save
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix
-from models import AutoencoderCNN
+import models
 from loguru import logger
+import yaml
 
+def load_config(file_path: str) -> dict:
+    """
+    Load YAML file.
+
+    Args:
+        file_path (str): Path to the YAML file.
+
+    Returns:
+        dict: Dictionary containing configuration information.
+    """
+    with open(file_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
 
 def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=False):
     """
@@ -19,7 +33,7 @@ def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=Fa
 
     Parameters:
     - checkpoint_path (str): Path to the checkpoint file (.pth) containing the model's state dictionary.
-    - model_architecture (str): The name of the model to load. Supported models include:
+    - model_name (str): The name of the model to load. Supported models include:
       - 'AutoencoderCNN': Loads an instance of the AutoencoderCNN model.
       Add more models here as needed.
     - device (str, optional): The device on which to load the model. Options are 'cuda' for GPU or 'cpu'.
@@ -45,11 +59,8 @@ def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=Fa
     print(f"Model loaded on device: {device}")
     ```
     """
-    if model_architecture == "AutoencoderCNN":
-        # Initialize the model
-        model = AutoencoderCNN()
-    else:
-        raise ValueError(f"Unsupported model_name: {model_architecture}")
+
+    model = getattr(models, model_architecture)()
 
     # Load the checkpoint
     checkpoint = torch.load(checkpoint_path)
@@ -60,12 +71,11 @@ def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=Fa
     if model_eval:
         # Set the model to evaluation mode
         model.eval()
-        print("Model set to evaluation mode")
+        logger.info("Model set to evaluation mode")
 
     # Move the model to the specified device
     device = torch.device(device if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-
     return model, device
 
 

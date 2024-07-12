@@ -19,12 +19,11 @@ from datasets import EvalDataset, TrainDataset
 from models import AutoencoderCNN
 from utils import *
 
-def main(config):
+def main():
     """Main function for training and evaluating the model.
-
-    Args:
-        config (dict): Dictionary of configurations.
     """
+
+    config = load_config(file_path="config.yaml")
     # load conf file for training
     PREDICTION_DIR = config['prediction_dir']
     SEED = config['seed']
@@ -41,6 +40,7 @@ def main(config):
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
     TRAIN_END = config['train_end']
+    MODEL_ARCHITECTURE = config['model_architecture']
 
 
     seed_everything(seed=SEED)
@@ -83,7 +83,8 @@ def main(config):
         train_tensorboard_writer = None
         val_tensorboard_writer = None
 
-    model = AutoencoderCNN()
+
+    model = getattr(models, MODEL_ARCHITECTURE)()
 
     logger.info("Number of GPU(s) {}: ".format(torch.cuda.device_count()))
     logger.info("GPU(s) in used {}: ".format(GPU_DEVICE))
@@ -249,10 +250,4 @@ def main(config):
 
 if __name__ == '__main__':
 
-    with open("config.yaml", "r") as stream:
-        try:
-            config = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            logger.info(exc)
-
-    main(config)
+    main()
