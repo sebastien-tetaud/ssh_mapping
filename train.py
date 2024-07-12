@@ -58,7 +58,7 @@ def main():
         os.makedirs(PREDICTION_DIR)
     prediction_dir = os.path.join(PREDICTION_DIR, '{}'.format(date))
     os.makedirs(prediction_dir)
-    train_dir = os.path.join(prediction_dir,"train_inference")
+    train_dir = os.path.join(prediction_dir, "train_inference")
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
     log_filename = os.path.join(prediction_dir, "train.log")
@@ -85,6 +85,8 @@ def main():
 
 
     model = getattr(models, MODEL_ARCHITECTURE)()
+
+
 
     logger.info("Number of GPU(s) {}: ".format(torch.cuda.device_count()))
     logger.info("GPU(s) in used {}: ".format(GPU_DEVICE))
@@ -146,6 +148,7 @@ def main():
                 inputs, targets = data
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
+
 
                 preds = model(inputs)
                 loss_train = torch.sqrt(criterion(preds.to(torch.float32), targets.to(torch.float32)))
