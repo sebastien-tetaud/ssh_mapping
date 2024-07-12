@@ -15,9 +15,43 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from datasets import EvalDataset, TrainDataset
+from datasets import EvalDataset, TrainDataset, TrainDataset3D
 from models import AutoencoderCNN
 from utils import *
+
+
+# Function to create 3D datasets with a depth of 10 days
+def create_3d_datasets(ds_inputs, ds_target, depth=10):
+    data_inputs = ds_inputs.values
+    data_target = ds_target.values
+
+    new_inputs = []
+    new_target = []
+
+    for i in range(0, len(data_inputs)):
+
+        if i < (depth/2):
+
+            input_slice = data_inputs[0: depth, :, :]
+
+        elif i > (depth/2) and i < (len(data_inputs)- (depth/2)):
+
+            input_slice = data_inputs[i - (int(depth/2)): i + (int(depth/2)), :, :]
+
+        else:
+
+            input_slice = data_inputs[- depth:, :, :]
+
+
+
+        target_slice = data_target[i, :, :]
+        new_inputs.append(input_slice)
+        new_target.append(target_slice)
+
+    new_inputs = np.array(new_inputs)
+    new_target = np.array(new_target)
+
+    return new_inputs, new_target
 
 def main():
     """Main function for training and evaluating the model.
@@ -119,15 +153,28 @@ def main():
     ds_target_train = ds_target['ssh'][:train_samples]
     ds_target_valid = ds_target['ssh'][train_samples:]
 
+    # Create 3D training and validation datasets
+    train_inputs_3d, train_target_3d = create_3d_datasets(ds_input_train, ds_target_train, depth=10)
+    valid_inputs_3d, valid_target_3d = create_3d_datasets(ds_input_valid, ds_target_valid, depth=10)
+
     logger.info("Number of Training data {0:d}".format(len(ds_target_train)))
     logger.info("------")
     logger.info("Number of Validation data {0:d}".format(len(ds_target_valid)))
     logger.info("------")
-    train_dataset = TrainDataset(ds_inputs=ds_input_train, ds_target=ds_target_train)
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    # train_dataset = TrainDataset(ds_inputs=ds_input_train, ds_target=ds_target_train)
+    # train_dataloader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-    eval_dataset = EvalDataset(ds_inputs=ds_input_valid,ds_target=ds_target_valid)
-    eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1, shuffle=False, num_workers=0)
+    # eval_dataset = EvalDataset(ds_inputs=ds_input_valid,ds_target=ds_target_valid)
+    # eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1, shuffle=False, num_workers=0)
+
+
+    # Instantiate the datasets
+    train_dataset = TrainDataset3D(train_inputs_3d, train_target_3d)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    valid_dataset = TrainDataset3D(valid_inputs_3d, valid_target_3d)
+    eval_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=1, shuffle=False)
+
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -146,11 +193,15 @@ def main():
 
                 optimizer.zero_grad()
                 inputs, targets = data
+
+
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
 
-
                 preds = model(inputs)
+
+                preds = preds[:, :, 5, :, :]
+
                 loss_train = torch.sqrt(criterion(preds.to(torch.float32), targets.to(torch.float32)))
                 loss_train.backward()
                 optimizer.step()
@@ -170,23 +221,34 @@ def main():
             inputs = inputs.to(device, dtype=torch.float)
             target = target.to(device, dtype=torch.float)
             with torch.no_grad():
+
                 pred = model(inputs)
-                eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
+
+                logger.warning(f"inputs shape: {inputs.shape}")
+                logger.warning(f"target shape: {target.shape}")
+                logger.warning(f"pred shape: {pred.shape}")
+
+                eval_loss = torch.sqrt(criterion(pred[:, :, 5, :, :].to(torch.float32), target.to(torch.float32)))
 
             eval_losses.update(eval_loss.item(), len(inputs))
             target = torch.squeeze(target, 0)
             target = target.detach().cpu().numpy()[0,:,:]
-            pred = torch.squeeze(pred,0)
+            pred = torch.squeeze(pred, 0)
             pred = pred.detach().cpu().numpy()[0,:,:]
-            inputs = torch.squeeze(inputs,0)
+
+            inputs = torch.squeeze(inputs, 0)
             inputs = inputs.detach().cpu().numpy()[0,:,:]
+            logger.info(inputs.shape)
+            logger.info(pred.shape)
+            logger.info(target.shape)
 
             from train_logs import log_prediction_plot
-            if index==20:
+            if index==1:
 
                 log_prediction_plot(inputs, pred, target, epoch, train_dir)
 
             targets.append(target.flatten())
+            pred = pred[5,:,:]
             preds.append(pred.flatten())
 
         train_tensorboard_writer.add_scalar('Loss/Validation', eval_losses.avg, epoch)

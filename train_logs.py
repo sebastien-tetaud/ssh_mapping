@@ -4,6 +4,19 @@ import matplotlib.pyplot as plt
 
 def log_prediction_plot(inputs, pred, target, epoch, prediction_dir):
 
+    print(inputs.shape)
+    print(pred.shape)
+    print(target.shape)
+
+    inputs = inputs[5,:,:]
+    # target = target[0,:,:]
+    pred = pred[5,:,:]
+
+
+    print(inputs.shape)
+    print(pred.shape)
+    print(target.shape)
+
     fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(25,5))
     fig.suptitle(f'Epoch {epoch}')
     inputs[inputs==0.001] = np.nan

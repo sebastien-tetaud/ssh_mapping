@@ -18,14 +18,12 @@ class AutoencoderCNN(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.relu3 = nn.ReLU()
 
-        self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.conv4= nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
         self.relu4 = nn.ReLU()
 
         self.conv5 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
         self.relu5 = nn.ReLU()
-
         self.conv6 = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
-
         # Decoder
         self.deconv1 = nn.ConvTranspose2d(in_channels=1, out_channels=256, kernel_size=3, stride=1, padding=1)
         self.relu6 = nn.ReLU()
@@ -43,6 +41,86 @@ class AutoencoderCNN(nn.Module):
         self.relu10 = nn.ReLU()
 
         self.deconv6 = nn.ConvTranspose2d(in_channels=16, out_channels=1, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, x):
+        # Encoder
+        x = self.conv1(x)
+        x = self.relu1(x)
+
+        x = self.conv2(x)
+        x = self.relu2(x)
+
+        x = self.conv3(x)
+        x = self.relu3(x)
+
+        x = self.conv4(x)
+        x = self.relu4(x)
+
+        x = self.conv5(x)
+        x = self.relu5(x)
+
+        x = self.conv6(x)
+
+        # Decoder
+        x = self.deconv1(x)
+        x = self.relu6(x)
+
+        x = self.deconv2(x)
+        x = self.relu7(x)
+
+        x = self.deconv3(x)
+        x = self.relu8(x)
+
+        x = self.deconv4(x)
+        x = self.relu9(x)
+
+        x = self.deconv5(x)
+        x = self.relu10(x)
+
+        x = self.deconv6(x)
+
+        return x
+
+
+class AutoencoderCNN3D(nn.Module):
+    def __init__(self):
+        super(AutoencoderCNN3D, self).__init__()
+
+        # Encoder
+        self.conv1 = nn.Conv3d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+
+        self.conv2 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+
+        self.conv3 = nn.Conv3d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu3 = nn.ReLU()
+
+        self.conv4 = nn.Conv3d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.relu4 = nn.ReLU()
+
+        self.conv5 = nn.Conv3d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.relu5 = nn.ReLU()
+
+        self.conv6 = nn.Conv3d(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
+
+        # Decoder
+        self.deconv1 = nn.ConvTranspose3d(in_channels=1, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.relu6 = nn.ReLU()
+
+        self.deconv2 = nn.ConvTranspose3d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.relu7 = nn.ReLU()
+
+        self.deconv3 = nn.ConvTranspose3d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu8 = nn.ReLU()
+
+        self.deconv4 = nn.ConvTranspose3d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu9 = nn.ReLU()
+
+        self.deconv5 = nn.ConvTranspose3d(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu10 = nn.ReLU()
+
+        self.deconv6 = nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
         # Encoder
