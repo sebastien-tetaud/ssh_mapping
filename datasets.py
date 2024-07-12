@@ -4,8 +4,8 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
-
 import warnings
+import cv2
 warnings.filterwarnings("ignore")
 
 
@@ -141,6 +141,7 @@ def image_preprocessing_pca(image_path):
     return pca_result_reshaped
 
 
+
 class TrainDataset(Dataset):
     """
     Custom training dataset class.
@@ -155,6 +156,8 @@ class TrainDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
+        # x = cv2.merge((x, x, x))
+
 
         y = self.ds_target[index].values
 
@@ -171,10 +174,12 @@ class TrainDataset(Dataset):
 
         y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)
 
+
         return x_norm, y_norm
 
     def __len__(self):
         return len(self.ds_inputs)
+
 
 
 class EvalDataset(Dataset):
@@ -192,6 +197,8 @@ class EvalDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
+        # x = cv2.merge((x, x, x))
+
 
         y = self.ds_target[index].values
 
@@ -202,10 +209,6 @@ class EvalDataset(Dataset):
 
         x_norm[np.isnan(x_norm)] = 0.001
 
-
-
-        # x = cv2.merge((x, x, x))
-        # x , y = data_augmentation(x,y)
 
         transform = transforms.Compose([
             transforms.ToTensor()])
@@ -235,9 +238,10 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
 
         x = self.ds_inputs[index].values
+        # x = cv2.merge((x, x, x))
+
 
         y = self.ds_target[index].values
-
 
         y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
 

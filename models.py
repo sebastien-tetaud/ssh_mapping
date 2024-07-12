@@ -1,6 +1,8 @@
 import torchvision.models as models
 from torch import nn
 import torch
+import timm
+
 
 class AutoencoderCNN(nn.Module):
     def __init__(self):
@@ -304,3 +306,17 @@ class Unet(nn.Module):
         out = self.sing_conv(x16)
         # out = self.out(x17)
         return out
+
+
+
+class ViTModel(nn.Module):
+    def __init__(self):
+        super(ViTModel, self).__init__()
+        self.base_model = timm.create_model('vit_base_patch16_224.orig_in21k_ft_in1k', pretrained=False)
+        self.base_model.head = nn.Linear(in_features=768, out_features=1*224*224, bias=True)  # Change the output features
+        self.output_shape = (1, 224, 224)  # Desired output shape
+
+    def forward(self, x):
+        x = self.base_model(x)
+        x = x.view(-1, *self.output_shape)  # Reshape the output to the desired shape
+        return x

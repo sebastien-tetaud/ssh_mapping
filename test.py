@@ -23,7 +23,7 @@ def prediction(test_dataloader, device, model, ymin, ymax):
         inputs = inputs.to(device, dtype=torch.float)
         with torch.no_grad():
             pred = model(inputs)
-        pred = torch.squeeze(pred,0)
+        pred = torch.squeeze(pred, 0)
         pred = pred.detach().cpu().numpy()[0,:,:]
 
         # Back to real values before normalization
@@ -70,6 +70,7 @@ def test(config_file, checkpoint_path, prediction_dir):
 
     # Run prediction and stack in an array
     pred = prediction(test_dataloader, device, model, ds_target.min().values, ds_target.max().values)
+
 
     # Create dataset
     ds_pred = ds_target.copy()
