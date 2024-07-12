@@ -308,7 +308,6 @@ class Unet(nn.Module):
         return out
 
 
-
 class ViTModel(nn.Module):
     def __init__(self):
         super(ViTModel, self).__init__()
