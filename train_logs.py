@@ -9,9 +9,8 @@ def log_prediction_plot(inputs, pred, target, epoch, prediction_dir):
     print(target.shape)
 
     inputs = inputs[5,:,:]
-    # target = target[0,:,:]
     pred = pred[5,:,:]
-
+    # target = target[0,:,:]
 
     print(inputs.shape)
     print(pred.shape)
