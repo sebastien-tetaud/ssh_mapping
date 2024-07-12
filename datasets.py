@@ -158,7 +158,6 @@ class TrainDataset(Dataset):
 
         y = self.ds_target[index].values
 
-
         y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
 
         x_norm = (x-y.min())/(y.max() - y.min()) + 0.01

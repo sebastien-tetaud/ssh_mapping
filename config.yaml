@@ -1,7 +1,7 @@
 outpout_dir: models/
 prediction_dir: training_inference/
-inputs_path: data_inputs_HR_5days.nc
-target_path: data_target_HR.nc
+inputs_path: data_inputs_5days.nc
+target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
 
@@ -14,7 +14,7 @@ train_end: "2013-09-30"
 data_split: [90,10]
 pretrained: True
 
-model_architecture: Unet
+model_architecture: AutoencoderCNN
 log_dir: "log"
 loss: "MSE"
 gpu_device: 0

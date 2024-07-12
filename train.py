@@ -19,12 +19,11 @@ from datasets import EvalDataset, TrainDataset
 from models import AutoencoderCNN
 from utils import *
 
-def main(config):
+def main():
     """Main function for training and evaluating the model.
-
-    Args:
-        config (dict): Dictionary of configurations.
     """
+
+    config = load_config(file_path="config.yaml")
     # load conf file for training
     PREDICTION_DIR = config['prediction_dir']
     SEED = config['seed']
@@ -145,6 +144,7 @@ def main(config):
 
                 optimizer.zero_grad()
                 inputs, targets = data
+                print(inputs.shape)
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
 
@@ -251,10 +251,4 @@ def main(config):
 
 if __name__ == '__main__':
 
-    with open("config.yaml", "r") as stream:
-        try:
-            config = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            logger.info(exc)
-
-    main(config)
+    main()

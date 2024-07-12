@@ -264,7 +264,7 @@ class Unet(nn.Module):
         self.tconv4 = trans_conv_block(in_channels=128, out_channels=64,kernel_size=2, stride=2)
         self.conv9 = double_conv_block(in_channels=128, out_channels=64,kernel_size=3, stride=1)
         self.sing_conv = single_conv_block(in_channels=64, out_channels=1,kernel_size=1, stride=1)
-        self.out = nn.Upsample(size=(572, 572), mode='bilinear', align_corners=False)
+        # self.out = nn.Upsample(size=(572, 572), mode='bilinear', align_corners=False)
 
     def forward(self, x):
         """
@@ -301,6 +301,6 @@ class Unet(nn.Module):
         x15 = self.tconv4(x15)
         concat_4  = torch.cat([crop_tensor(x1,x15), x15], dim=1)
         x16 = self.conv9(concat_4)
-        x17 = self.sing_conv(x16)
-        out = self.out(x17)
+        out = self.sing_conv(x16)
+        # out = self.out(x17)
         return out
