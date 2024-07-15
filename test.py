@@ -85,6 +85,7 @@ def test(config_file, checkpoint_path, prediction_dir):
     write_netcdf = config_file['write_netcdf']
     animate = config_file['animate']
     compute_metrics = config_file['compute_metrics']
+    depth = config_file['depth']
 
     test_dir = os.path.join(prediction_dir,"test_inference")
     if not os.path.exists(test_dir):
@@ -103,7 +104,7 @@ def test(config_file, checkpoint_path, prediction_dir):
     ds_inputs = ds_inputs.sel(time=slice(test_start, test_end))[name_var_inputs]
     ds_target = ds_target.sel(time=slice(test_start, test_end))[name_var_target]
 
-    test_inputs_3d, test_target_3d = create_3d_datasets(ds_inputs, ds_target, depth=6)
+    test_inputs_3d, test_target_3d = create_3d_datasets(ds_inputs, ds_target, depth=depth)
 
     test_dataset = TestDataset3D(test_inputs_3d, test_target_3d)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)

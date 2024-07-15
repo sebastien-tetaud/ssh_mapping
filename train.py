@@ -63,6 +63,7 @@ def main():
     GPU_DEVICE = config['gpu_device']
     LOSS_FUNC = config['loss']
     INPUTS_PATH = config['inputs_path']
+    DEPTH = config['depth']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
@@ -164,7 +165,6 @@ def main():
 
     valid_dataset = TrainDataset3D(valid_inputs_3d, valid_target_3d)
     eval_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=1, shuffle=False)
-
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0
