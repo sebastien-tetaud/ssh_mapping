@@ -212,11 +212,6 @@ def main():
             with torch.no_grad():
 
                 pred = model(inputs)
-
-                logger.warning(f"inputs shape: {inputs.shape}")
-                logger.warning(f"target shape: {target.shape}")
-                logger.warning(f"pred shape: {pred.shape}")
-
                 eval_loss = torch.sqrt(criterion(pred[:, :, 3, :, :].to(torch.float32), target.to(torch.float32)))
 
             eval_losses.update(eval_loss.item(), len(inputs))
@@ -227,9 +222,6 @@ def main():
 
             inputs = torch.squeeze(inputs, 0)
             inputs = inputs.detach().cpu().numpy()[0,:,:]
-            logger.info(inputs.shape)
-            logger.info(pred.shape)
-            logger.info(target.shape)
 
             from train_logs import log_prediction_plot
             if index==1:
