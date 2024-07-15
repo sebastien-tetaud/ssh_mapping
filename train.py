@@ -15,8 +15,8 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from datasets import EvalDataset, TrainDataset, TrainDataset3D
-from models import AutoencoderCNN
+from datasets import TrainDataset3D
+
 from utils import *
 
 
@@ -62,7 +62,6 @@ def main():
     TBP = config['tbp']
     GPU_DEVICE = config['gpu_device']
     LOSS_FUNC = config['loss']
-    AUTO_EVAL = config['auto_eval']
     INPUTS_PATH = config['inputs_path']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']

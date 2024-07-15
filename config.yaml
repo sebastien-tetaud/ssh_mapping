@@ -1,21 +1,19 @@
 outpout_dir: models/
 prediction_dir: training_inference/
-# inputs_path: data_inputs_224_10days.nc
-# target_path: data_target_224_10days.nc
+
 inputs_path: data_inputs.nc
-# inputs_path: data_inputs_5days.nc
 target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
 
+
 test_start: "2012-10-22"
 test_end: "2012-12-02"
+data_split: [90,10]
 
 train_start: "2013-01-02"
 train_end: "2013-09-30"
 
-data_split: [90,10]
-pretrained: True
 
 model_architecture: AutoencoderCNN3D
 log_dir: "log"
@@ -27,7 +25,7 @@ epochs: 200
 workers: 8
 seed: 123
 tbp: 8888
-auto_eval: True
+
 
 name_diag: Diag_OSSE
 write_netcdf: True
