@@ -2,50 +2,24 @@ import copy
 import datetime
 import os
 
-import pandas as pd # type: ignore
-import torch # type: ignore
-import torch.backends.cudnn as cudnn
-import torch.optim as optim
-import xarray as xr
-import yaml
-from loguru import logger
-from sklearn.metrics import root_mean_squared_error
-from torch import nn
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
+import pandas as pd  # type: ignore
+import torch  # type: ignore
+import torch.backends.cudnn as cudnn  # type: ignore
+import torch.optim as optim  # type: ignore
+import xarray as xr  # type: ignore
+from loguru import logger  # type: ignore
+from sklearn.metrics import root_mean_squared_error  # type: ignore
+from torch import nn  # type: ignore
+from torch.utils.data.dataloader import DataLoader  # type: ignore
+from torch.utils.tensorboard import SummaryWriter  # type: ignore
+from tqdm import tqdm  # type: ignore
 
-from datasets import TrainDataset3D
+import models
+from datasets import TrainDataset3D, create_3d_datasets
+from utils import (AverageMeter, count_model_parameters, estimate_model_size,
+                   load_config, plot_loss_metrics, save_config,
+                   seed_everything)
 
-from utils import *
-
-
-# Function to create 3D datasets with a depth of 10 days
-def create_3d_datasets(ds_inputs, ds_target, depth=6):
-    data_inputs = ds_inputs.values
-    data_target = ds_target.values
-
-    new_inputs = []
-    new_target = []
-    for i in range(0, len(data_inputs)):
-
-        if i < (depth/2):
-
-            input_slice = data_inputs[0: depth, :, :]
-
-        elif i > (depth/2) and i < (len(data_inputs)- (depth/2)):
-
-            input_slice = data_inputs[i - (int(depth/2)): i + (int(depth/2)), :, :]
-        else:
-            input_slice = data_inputs[- depth:, :, :]
-        target_slice = data_target[i, :, :]
-        new_inputs.append(input_slice)
-        new_target.append(target_slice)
-
-    new_inputs = np.array(new_inputs)
-    new_target = np.array(new_target)
-
-    return new_inputs, new_target
 
 def main():
     """Main function for training and evaluating the model.
@@ -130,7 +104,6 @@ def main():
     ds_inputs = xr.open_dataset(INPUTS_PATH)
     ds_target = xr.open_dataset(TARGET_PATH)
     # slice data related to the challange
-    # https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
     ds_inputs = ds_inputs.sel(time=slice(TRAIN_START, TRAIN_END))
     ds_target = ds_target.sel(time=slice(TRAIN_START, TRAIN_END))
 
@@ -158,13 +131,12 @@ def main():
     # eval_dataset = EvalDataset(ds_inputs=ds_input_valid,ds_target=ds_target_valid)
     # eval_dataloader = DataLoader(dataset=eval_dataset, batch_size=1, shuffle=False, num_workers=0)
 
-
     # Instantiate the datasets
     train_dataset = TrainDataset3D(train_inputs_3d, train_target_3d)
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     valid_dataset = TrainDataset3D(valid_inputs_3d, valid_target_3d)
-    eval_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=1, shuffle=False)
+    eval_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0

@@ -1,11 +1,12 @@
-import numpy as np
 import random
+import warnings
+
+import albumentations as A
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-import albumentations as A
-import warnings
-import cv2
+
 warnings.filterwarnings("ignore")
 
 
@@ -85,61 +86,31 @@ def data_augmentation(x, y):
     return x_augmented, y_augmented
 
 
-def normalize(band):
-    band_min, band_max = (band.min(), band.max())
-    return ((band-band_min)/((band_max - band_min)))
+def create_3d_datasets(ds_inputs, ds_target, depth=6):
+    data_inputs = ds_inputs.values
+    data_target = ds_target.values
 
+    new_inputs = []
+    new_target = []
+    for i in range(0, len(data_inputs)):
 
-def image_preprocessing(image_path):
+        if i < (depth/2):
 
-    image = xr.open_rasterio(image_path, masked=False).values
-    red = image[3,:,:]
-    green = image[2,:,:]
-    blue = image[1,:,:]
-    red_n = normalize(red)
-    green_n = normalize(green)
-    blue_n = normalize(blue)
-    rgb_composite_n= np.dstack((red_n, green_n, blue_n))
-    return rgb_composite_n
+            input_slice = data_inputs[0: depth, :, :]
 
+        elif i > (depth/2) and i < (len(data_inputs)- (depth/2)):
 
-def image_preprocessing_index(image_path):
+            input_slice = data_inputs[i - (int(depth/2)): i + (int(depth/2)), :, :]
+        else:
+            input_slice = data_inputs[- depth:, :, :]
+        target_slice = data_target[i, :, :]
+        new_inputs.append(input_slice)
+        new_target.append(target_slice)
 
-    image = xr.open_rasterio(image_path, masked=False).values
+    new_inputs = np.array(new_inputs)
+    new_target = np.array(new_target)
 
-    nwdi = (image[2,:,:]-image[7,:,:])/(image[2,:,:]+image[7,:,:])
-    # nwdi = normalize(nwdi)
-
-    ndvi = (image[7,:,:]-image[3,:,:])/(image[7,:,:]+image[3,:,:])
-    # ndvi = normalize(ndvi)
-
-    msi = image[10,:,:]/image[7,:,:]
-    # msi = normalize(msi)
-
-    image_index = np.dstack((ndvi, nwdi, msi))
-
-    image_index = normalize(image_index)
-    print(image_index.shape)
-    # image_index= np.transpose(image_index, (1, 2, 0))
-    return image_index
-
-
-def image_preprocessing_pca(image_path):
-
-
-    from sklearn.decomposition import PCA
-
-    image = xr.open_rasterio(image_path, masked=False).values
-    reshaped_data = image.reshape((12, -1)).T  # Transpose for the correct shape
-    n_components = 3  # Number of principal components
-    pca = PCA(n_components=n_components)
-    pca_result = pca.fit_transform(reshaped_data)
-
-    pca_result_reshaped = pca_result.T.reshape((n_components, 512, 512))
-    # pca_result_reshaped = normalize(pca_result_reshaped)
-    pca_result_reshaped = np.transpose(pca_result_reshaped, (1, 2, 0))
-    return pca_result_reshaped
-
+    return new_inputs, new_target
 
 
 class TrainDataset(Dataset):

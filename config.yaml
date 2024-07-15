@@ -6,6 +6,7 @@ target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
 
+# https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
 test_start: "2012-10-22"
 test_end: "2012-12-02"
 data_split: [90,10]

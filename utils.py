@@ -13,6 +13,9 @@ import models
 from loguru import logger
 import yaml
 
+
+
+
 def load_config(file_path: str) -> dict:
     """
     Load YAML file.
@@ -26,6 +29,7 @@ def load_config(file_path: str) -> dict:
     with open(file_path, 'r') as file:
         config = yaml.safe_load(file)
     return config
+
 
 def load_model(checkpoint_path, model_architecture, device='cuda', model_eval=False):
     """

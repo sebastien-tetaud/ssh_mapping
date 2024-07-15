@@ -1,18 +1,18 @@
+import os
+
+import numpy as np
 import torch
 import xarray as xr
-import numpy as np
 from loguru import logger
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-from datasets import TestDataset, TestDataset3D
-import os
+
+import diags
+from datasets import TestDataset3D, create_3d_datasets
 from models import AutoencoderCNN
 from train_logs import log_prediction_plot
-from utils import count_model_parameters
-import yaml
-import diags
-from utils import load_model
-from loguru import logger
+from utils import count_model_parameters, load_model
+
 
 def prediction(test_dataloader, device, model, ymin, ymax):
 
@@ -37,39 +37,6 @@ def prediction(test_dataloader, device, model, ymin, ymax):
         list_pred.append(pred)
 
     return np.asarray(list_pred)
-
-# Function to create 3D datasets with a depth of 10 days
-def create_3d_datasets(ds_inputs, ds_target, depth=6):
-    data_inputs = ds_inputs.values
-    data_target = ds_target.values
-
-    new_inputs = []
-    new_target = []
-
-    for i in range(0, len(data_inputs)):
-
-        if i < (depth/2):
-
-            input_slice = data_inputs[0: depth, :, :]
-
-        elif i > (depth/2) and i < (len(data_inputs)- (depth/2)):
-
-            input_slice = data_inputs[i - (int(depth/2)): i + (int(depth/2)), :, :]
-
-        else:
-
-            input_slice = data_inputs[- depth:, :, :]
-
-
-
-        target_slice = data_target[i, :, :]
-        new_inputs.append(input_slice)
-        new_target.append(target_slice)
-
-    new_inputs = np.array(new_inputs)
-    new_target = np.array(new_target)
-
-    return new_inputs, new_target
 
 
 def test(config_file, checkpoint_path, prediction_dir):
