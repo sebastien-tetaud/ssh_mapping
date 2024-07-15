@@ -9,8 +9,6 @@ from tqdm import tqdm
 
 import diags
 from datasets import TestDataset3D, create_3d_datasets
-from models import AutoencoderCNN
-from train_logs import log_prediction_plot
 from utils import count_model_parameters, load_model
 
 
