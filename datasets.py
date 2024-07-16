@@ -1,11 +1,11 @@
 import random
 import warnings
 
-import albumentations as A
-import numpy as np
-import torch
-from torch.utils.data import Dataset
-from torchvision import transforms
+import albumentations as A  # type: ignore
+import numpy as np  # type: ignore
+import torch  # type: ignore
+from torch.utils.data import Dataset  # type: ignore
+from torchvision import transforms  # type: ignore
 
 warnings.filterwarnings("ignore")
 
@@ -232,6 +232,30 @@ class TestDataset(Dataset):
         return len(self.ds_inputs)
 
 
+# class TrainDataset3D(Dataset):
+#     def __init__(self, ds_inputs, ds_target):
+#         self.ds_inputs = ds_inputs
+#         self.ds_target = ds_target
+
+#     def __getitem__(self, index):
+#         x = self.ds_inputs[index]  # 3D numpy array (depth, height, width)
+#         y = self.ds_target[index]  # 3D numpy array (depth, height, width)
+
+#         # Normalize the data
+#         y_min, y_max = y.min(), y.max()
+#         y_norm = (y - y_min) / (y_max - y_min) + 0.01
+#         x_norm = (x - y_min) / (y_max - y_min) + 0.01
+#         x_norm[np.isnan(x_norm)] = 0.001
+
+#         # Transform to tensors and add channel dimension
+#         x_norm = torch.tensor(x_norm, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
+#         y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
+
+#         return x_norm, y_norm
+
+#     def __len__(self):
+#         return len(self.ds_inputs)
+
 class TrainDataset3D(Dataset):
     def __init__(self, ds_inputs, ds_target):
         self.ds_inputs = ds_inputs
@@ -245,13 +269,21 @@ class TrainDataset3D(Dataset):
         y_min, y_max = y.min(), y.max()
         y_norm = (y - y_min) / (y_max - y_min) + 0.01
         x_norm = (x - y_min) / (y_max - y_min) + 0.01
+
         x_norm[np.isnan(x_norm)] = 0.001
+
+        # Create mask for valid pixels (1 for valid, 0 for missing)
+        mask = np.ones_like(x_norm)
+
+        mask[x_norm==0.001] = 0
+
 
         # Transform to tensors and add channel dimension
         x_norm = torch.tensor(x_norm, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
         y_norm = torch.tensor(y_norm, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
+        mask = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)      # Add channel dimension
 
-        return x_norm, y_norm
+        return x_norm, mask, y_norm
 
     def __len__(self):
         return len(self.ds_inputs)

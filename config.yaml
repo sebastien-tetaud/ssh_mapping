@@ -14,7 +14,8 @@ data_split: [90,10]
 train_start: "2013-01-02"
 train_end: "2013-09-30"
 
-model_architecture: SimpleAutoencoderCNN3D
+model_architecture: AutoencoderPartialCNN3D
+# model_architecture: SimpleAutoencoderCNN3D
 depth: 6 # Based on pytorch notation.
 
 log_dir: "log"

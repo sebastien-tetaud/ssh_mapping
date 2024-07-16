@@ -375,3 +375,146 @@ class Unet(nn.Module):
         out = self.sing_conv(x16)
         # out = self.out(x17)
         return out
+
+
+import torch
+import torch.nn as nn
+
+class PartialConv3D(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+        super(PartialConv3D, self).__init__()
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride, padding)
+        self.mask_update_conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+
+        # Initialize the mask update convolution weights to ones
+        torch.nn.init.constant_(self.mask_update_conv.weight, 1.0)
+        self.mask_update_conv.weight.requires_grad = False
+
+    def forward(self, x, mask):
+        # Apply convolution to the valid pixels
+        x = x * mask  # Mask the input x
+
+        # Perform the convolution
+        output = self.conv(x)
+
+        # Normalize the output by the sum of the mask values
+        mask_sum = self.mask_update_conv(mask)
+        mask_sum = mask_sum.masked_fill_(mask_sum == 0, 1.0)  # Avoid division by zero
+        output = output / mask_sum
+
+        # Update the mask
+        new_mask = self.mask_update_conv(mask)
+        new_mask = (new_mask > 0).float()
+
+        return output, new_mask
+
+class PartialDeConv3D(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+        super(PartialDeConv3D, self).__init__()
+        self.conv = nn.ConvTranspose3d(in_channels, out_channels, kernel_size, stride, padding)
+        self.mask_update_conv = nn.ConvTranspose3d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+
+        # Initialize the mask update convolution weights to ones
+        torch.nn.init.constant_(self.mask_update_conv.weight, 1.0)
+        self.mask_update_conv.weight.requires_grad = False
+
+    def forward(self, x, mask):
+        # Apply convolution to the valid pixels
+        x = x * mask  # Mask the input x
+
+        # Perform the convolution
+        output = self.conv(x)
+
+        # Normalize the output by the sum of the mask values
+        mask_sum = self.mask_update_conv(mask)
+        mask_sum = mask_sum.masked_fill_(mask_sum == 0, 1.0)  # Avoid division by zero
+        output = output / mask_sum
+
+        # Update the mask
+        new_mask = self.mask_update_conv(mask)
+        new_mask = (new_mask > 0).float()
+
+        return output, new_mask
+
+
+
+class AutoencoderPartialCNN3D(nn.Module):
+    def __init__(self):
+        super(AutoencoderPartialCNN3D, self).__init__()
+
+        # Encoder
+        self.conv1 = PartialConv3D(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+
+        self.conv2 = PartialConv3D(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+
+        self.conv3 = PartialConv3D(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu3 = nn.ReLU()
+
+        self.conv4 = PartialConv3D(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.relu4 = nn.ReLU()
+
+        self.conv5 = PartialConv3D(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.relu5 = nn.ReLU()
+
+        self.conv6 = PartialConv3D(in_channels=256, out_channels=1, kernel_size=3, stride=1, padding=1)
+
+        # Decoder
+        self.deconv1 = nn.PartialDeConv3D(in_channels=1, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.relu6 = nn.ReLU()
+
+        self.deconv2 = nn.PartialDeConv3D(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.relu7 = nn.ReLU()
+
+        self.deconv3 = nn.PartialDeConv3D(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu8 = nn.ReLU()
+
+        self.deconv4 = nn.PartialDeConv3D(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu9 = nn.ReLU()
+
+        self.deconv5 = nn.PartialDeConv3D(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu10 = nn.ReLU()
+
+        self.deconv6 = nn.PartialDeConv3D(in_channels=16, out_channels=1, kernel_size=(3,3,3) , stride=(1,1,1), padding=(1,1,1))
+
+
+    def forward(self, x, mask):
+        # Encoder
+        x, mask = self.conv1(x, mask)
+        x = self.relu1(x)
+
+        x, mask = self.conv2(x, mask)
+        x = self.relu2(x)
+
+        x, mask = self.conv3(x, mask)
+        x = self.relu3(x)
+
+        x, mask = self.conv4(x, mask)
+        x = self.relu4(x)
+
+        x, mask = self.conv5(x, mask)
+        x = self.relu5(x)
+
+        x, mask = self.conv6(x, mask)
+
+        # Decoder
+        x = self.deconv1(x)
+        x = self.relu6(x)
+
+        x = self.deconv2(x)
+        x = self.relu7(x)
+
+        x = self.deconv3(x)
+        x = self.relu8(x)
+
+        x = self.deconv4(x)
+        x = self.relu9(x)
+
+        x = self.deconv5(x)
+        x = self.relu10(x)
+        x = self.deconv6(x)
+
+
+
+        return x
