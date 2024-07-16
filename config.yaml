@@ -14,15 +14,15 @@ data_split: [90,10]
 train_start: "2013-01-02"
 train_end: "2013-09-30"
 
-model_architecture: AutoencoderCNN3D
-depth: 6
+model_architecture: SimpleAutoencoderCNN3D
+depth: 6 # Based on pytorch notation.
 
 log_dir: "log"
 loss: "MSE"
 gpu_device: 0
 lr: 1e-4
 batch_size: 8
-epochs: 50
+epochs: 200
 
 workers: 8
 seed: 123

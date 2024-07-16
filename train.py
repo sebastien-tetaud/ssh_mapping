@@ -157,6 +157,7 @@ def main():
                 inputs, targets = data
 
                 inputs = inputs.to(device, dtype=torch.float)
+
                 targets = targets.to(device, dtype=torch.float)
 
                 preds = model(inputs)
@@ -183,7 +184,8 @@ def main():
             with torch.no_grad():
 
                 pred = model(inputs)
-                eval_loss = torch.sqrt(criterion(pred[:, :, 3, :, :].to(torch.float32), target.to(torch.float32)))
+                pred = pred[:, :, 3, :, :]
+                eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
 
             eval_losses.update(eval_loss.item(), len(inputs))
             target = torch.squeeze(target, 0)
@@ -200,7 +202,7 @@ def main():
                 log_prediction_plot(inputs, pred, target, epoch, train_dir)
 
             targets.append(target.flatten())
-            pred = pred[3,:,:]
+            # pred = pred[3,:,:]
             preds.append(pred.flatten())
 
         train_tensorboard_writer.add_scalar('Loss/Validation', eval_losses.avg, epoch)
