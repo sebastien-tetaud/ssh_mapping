@@ -79,6 +79,7 @@ class AutoencoderCNN(nn.Module):
 
         return x
 
+
 class Encoder(nn.Module):
     def __init__(self, layers):
         super(Encoder, self).__init__()
@@ -87,6 +88,7 @@ class Encoder(nn.Module):
     def forward(self, x):
         return self.encoder(x)
 
+
 class Decoder(nn.Module):
     def __init__(self, layers):
         super(Decoder, self).__init__()
@@ -94,6 +96,7 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         return self.decoder(x)
+
 
 class SimpleAutoencoderCNN3D(nn.Module):
     def __init__(self):
@@ -133,6 +136,7 @@ class SimpleAutoencoderCNN3D(nn.Module):
         x = self.decoder(x)
 
         return x
+
 
 class AutoencoderCNN3D(nn.Module):
     def __init__(self):
