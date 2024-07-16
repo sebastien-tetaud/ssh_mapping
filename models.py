@@ -121,6 +121,7 @@ class AutoencoderCNN3D(nn.Module):
         self.relu10 = nn.ReLU()
 
         self.deconv6 = nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.relu11 = nn.ReLU()
 
     def forward(self, x):
         # Encoder
@@ -158,6 +159,7 @@ class AutoencoderCNN3D(nn.Module):
         x = self.relu10(x)
 
         x = self.deconv6(x)
+        x = self.relu11(x)
 
         return x
 
