@@ -1,7 +1,7 @@
 outpout_dir: models/
 prediction_dir: training_inference/
 
-inputs_path: data_inputs.nc
+inputs_path: data_inputs_5days.nc
 target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
@@ -14,21 +14,19 @@ data_split: [90,10]
 train_start: "2013-01-02"
 train_end: "2013-09-30"
 
-model_architecture: AutoencoderPartialCNN3D
-# model_architecture: SimpleAutoencoderCNN3D
-depth: 6 # Based on pytorch notation.
+model_architecture: SimpleAutoencoderCNN3D
+depth: 6
 
 log_dir: "log"
 loss: "MSE"
 gpu_device: 0
 lr: 1e-4
 batch_size: 8
-epochs: 200
+epochs: 100
 
 workers: 8
 seed: 123
 tbp: 8888
-
 
 name_diag: Diag_OSSE
 write_netcdf: True

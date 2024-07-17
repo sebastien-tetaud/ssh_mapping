@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import xarray as xr
+import yaml
 from loguru import logger
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -68,13 +69,13 @@ def test(config_file, checkpoint_path, prediction_dir):
 
     ds_inputs = ds_inputs.sel(time=slice(test_start, test_end))[name_var_inputs]
     ds_target = ds_target.sel(time=slice(test_start, test_end))[name_var_target]
-
     test_inputs_3d, test_target_3d = create_3d_datasets(ds_inputs, ds_target, depth=depth)
 
     test_dataset = TestDataset3D(test_inputs_3d, test_target_3d)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     # Run prediction and stack in an array
-    pred = prediction(test_dataloader, device, model, ds_target.min().values, ds_target.max().values)
+
+    pred = prediction(test_dataloader, device, model, float(ds_target.min().values), float(ds_target.max().values))
 
     # Create dataset
     ds_pred = ds_target.copy()
@@ -93,13 +94,14 @@ def test(config_file, checkpoint_path, prediction_dir):
         diag.compute_metrics()
         diag.Leaderboard()
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-#     with open("config.yaml", "r") as stream:
-#         try:
-#             config = yaml.safe_load(stream)
-#         except yaml.YAMLError as exc:
-#             logger.info(exc)
+    with open("config.yaml", "r") as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            logger.info(exc)
 
-#     test(config, 'training_inference/2024_07_12_15_39_47/best.pth', 'training_inference/2024_07_12_15_39_47/')
+    test(config, 'training_inference/2024_07_17_11_35_37/best.pth',
+         'training_inference/2024_07_17_11_35_37/')
 

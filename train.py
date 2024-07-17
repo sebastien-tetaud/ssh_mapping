@@ -154,16 +154,16 @@ def main():
             for data in train_dataloader:
 
                 optimizer.zero_grad()
-                # inputs, targets = data
-                # inputs = inputs.to(device, dtype=torch.float)
-                # targets = targets.to(device, dtype=torch.float)
-                # preds = model(inputs)
-
-                inputs, masks, targets = data
+                inputs, targets = data
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
-                masks = masks.to(device, dtype=torch.float)
-                preds = model(inputs, masks)
+                preds = model(inputs)
+
+                # inputs, masks, targets = data
+                # inputs = inputs.to(device, dtype=torch.float)
+                # targets = targets.to(device, dtype=torch.float)
+                # masks = masks.to(device, dtype=torch.float)
+                # preds = model(inputs, masks)
 
                 preds = preds[:, :, 3, :, :]
 
@@ -182,19 +182,20 @@ def main():
         preds = []
 
         for index, data in enumerate(eval_dataloader):
-            # inputs, target = data
-            # inputs = inputs.to(device, dtype=torch.float)
-            # target = target.to(device, dtype=torch.float)
-
-            inputs, masks, target = data
+            inputs, target = data
             inputs = inputs.to(device, dtype=torch.float)
             target = target.to(device, dtype=torch.float)
-            masks = masks.to(device, dtype=torch.float)
+
+            # inputs, masks, target = data
+            # inputs = inputs.to(device, dtype=torch.float)
+            # target = target.to(device, dtype=torch.float)
+            # masks = masks.to(device, dtype=torch.float)
 
 
             with torch.no_grad():
 
-                pred = model(inputs, masks)
+                # pred = model(inputs, masks)
+                pred = model(inputs)
                 pred = pred[:, :, 3, :, :]
                 eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
 
