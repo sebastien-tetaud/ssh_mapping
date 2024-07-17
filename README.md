@@ -1,11 +1,67 @@
 # ssh_mapping
 
+## Local Installation on Linux
+- Python 3.9 is required.
+- Miniconda is recommended for managing Python environments.
+### Download and Install Miniconda
 
+```Bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+sh Miniconda3-latest-Linux-x86_64.sh
+```
 
+### Usage
 
+Clone this repository with the following cli:
 
+```Bash
+git clone https://github.com/tetaud-sebastien/ssh_mapping
+cd ssh_mapping
+```
 
-# Docker
+Create conda environment with python 3.9
+
+```Bash
+conda create --name ssh python==3.11.9
+```
+
+Activate the conda environment
+```Bash
+conda activate ssh
+```
+
+Activate the Conda Environment
+```Bash
+pip install -r requirements.txt
+```
+```Bash
+conda install pyinterp -c conda-forge
+```
+Install Jupyter Notebook:
+
+```Bash
+pip install jupyter notebook
+```
+
+## Download the data
+
+```bash
+sh download_data.sh
+```
+
+## Preprocess the data
+
+```bash
+python preprocess_data.py
+```
+
+## Training
+
+```Bash
+python train.py
+```
+
+# Using Docker
 
 ## 1. Install Docker via CLI not snap
 
@@ -62,11 +118,7 @@ ubuntu-drivers devices
 you should see:
 
 ```bash
-(ssh) ubuntu@l40s-90-gra11:~/project/ssh_mapping$ ubuntu-drivers devices
-udevadm hwdb is deprecated. Use systemd-hwdb instead.
-udevadm hwdb is deprecated. Use systemd-hwdb instead.
-udevadm hwdb is deprecated. Use systemd-hwdb instead.
-udevadm hwdb is deprecated. Use systemd-hwdb instead.
+(ssh) ubuntu@l****:~/project/ssh_mapping$ ubuntu-drivers devices
 ERROR:root:aplay command not found
 == /sys/devices/pci0000:00/0000:00:06.0 ==
 modalias : pci:v000010DEd000026B9sv000010DEsd00001851bc03sc02i00
