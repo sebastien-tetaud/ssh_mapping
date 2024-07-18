@@ -50,7 +50,7 @@ for t_idx, time in enumerate(time_regular):
     ssh1d = np.array([])
     for _ds_obs in ds_obs:
         # Mask for the current time step within a tolerance
-        mask = np.abs(_ds_obs.time - time) <= np.timedelta64(int(5*24*dt/2), 'h')
+        mask = np.abs(_ds_obs.time - time) <= np.timedelta64(int(1*24*dt/2), 'h')
         _ds_obs_mask = _ds_obs.where(mask, drop=True)
         ssh1d = np.concatenate((ssh1d,_ds_obs_mask.ssh_model.values))
         lon1d = np.concatenate((lon1d,_ds_obs_mask.lon.values))
@@ -75,7 +75,7 @@ ds_inputs = xr.Dataset(
 )
 
 # Save the new dataset
-ds_inputs.to_netcdf(f"{dir_data}/data_inputs_5days.nc")
+ds_inputs.to_netcdf(f"{dir_data}/data_inputs.nc")
 
 
 ds_inputs.close()

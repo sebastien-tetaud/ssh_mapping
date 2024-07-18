@@ -109,6 +109,7 @@ class SimpleAutoencoderCNN3D(nn.Module):
 
         for out_channels in out_channels_list:
             encoder_layers.append(nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=1, padding=1))
+            # encoder_layers.append(nn.BatchNorm3d(out_channels))
             if out_channels != 1:  # No ReLU for the last layer in the encoder
                 encoder_layers.append(nn.ReLU())
             in_channels = out_channels
@@ -120,13 +121,18 @@ class SimpleAutoencoderCNN3D(nn.Module):
 
         for out_channels in out_channels_list:
             decoder_layers.append(nn.ConvTranspose3d(in_channels, out_channels, kernel_size=3, stride=1, padding=1))
+            # decoder_layers.append(nn.BatchNorm3d(out_channels))
             if out_channels != 1:  # No ReLU for the last layer in the decoder
                 decoder_layers.append(nn.ReLU())
             in_channels = out_channels
-
+        # Final convolution to adjust depth to 1 and squeeze layer
+        final_layers = nn.Conv3d(1, 1, kernel_size=(6, 3, 3), stride=(1, 1, 1), padding=(0, 1, 1))
         # Initialize Encoder and Decoder
         self.encoder = Encoder(encoder_layers)
         self.decoder = Decoder(decoder_layers)
+        self.final_layers = final_layers
+
+
 
     def forward(self, x):
         # Encoder
@@ -134,6 +140,7 @@ class SimpleAutoencoderCNN3D(nn.Module):
 
         # Decoder
         x = self.decoder(x)
+        x = self.final_layers(x)
 
         return x
 

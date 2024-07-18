@@ -165,7 +165,7 @@ def main():
                 # masks = masks.to(device, dtype=torch.float)
                 # preds = model(inputs, masks)
 
-                preds = preds[:, :, 3, :, :]
+                # preds = preds[:, :, 3, :, :]
 
                 loss_train = torch.sqrt(criterion(preds.to(torch.float32), targets.to(torch.float32)))
                 loss_train.backward()
@@ -196,7 +196,7 @@ def main():
 
                 # pred = model(inputs, masks)
                 pred = model(inputs)
-                pred = pred[:, :, 3, :, :]
+                # pred = pred[:, :, 3, :, :]
                 eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
 
             eval_losses.update(eval_loss.item(), len(inputs))

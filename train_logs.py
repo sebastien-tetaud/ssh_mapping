@@ -4,9 +4,12 @@ import matplotlib.pyplot as plt
 
 def log_prediction_plot(inputs, pred, target, epoch, prediction_dir):
 
-    inputs = inputs[3,:,:]
-    # pred = pred[3,:,:]
-    fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(25,5))
+
+
+
+    inputs = inputs[0,:,:]
+    pred = pred[0,:,:]
+    fig, (ax1, ax2, ax3) = plt.subplots(1,3,figsize=(25,5))
     fig.suptitle(f'Epoch {epoch}')
     inputs[inputs==0.001] = np.nan
     im = ax1.pcolormesh(inputs, vmin=0,vmax=1)
