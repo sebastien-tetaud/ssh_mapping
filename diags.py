@@ -1,8 +1,8 @@
-import os 
-import xarray as xr 
-import numpy as np 
+import os
+import xarray as xr
+import numpy as np
 import datetime
-import matplotlib.pylab as plt 
+import matplotlib.pylab as plt
 import imageio
 from loguru import logger
 import xrft
@@ -45,49 +45,49 @@ class Diag_OSSE():
             for image_path in image_paths:
                 image = imageio.imread(image_path)
                 writer.append_data(image)
-        
+
             # Clean up the temporary images
             for image_path in image_paths:
                 os.remove(image_path)
             os.rmdir(tmp_dir)
 
         return
-    
+
     def compute_metrics(self, plot=True):
 
-        # RMSE 
+        # RMSE
         self._rmse_score(plot=plot)
 
         # SPECTRAL
         self._psd_score(plot=plot)
-    
+
     def Leaderboard(self):
 
-        data = [['Hiyeyo', 
-                np.round(self.leaderboard_rmse,2), 
-                np.round(self.reconstruction_error_stability_metric, 2), 
-                np.round(self.shortest_spatial_wavelength_resolved,2), 
+        data = [['metrics',
+                np.round(self.leaderboard_rmse,2),
+                np.round(self.reconstruction_error_stability_metric, 2),
+                np.round(self.shortest_spatial_wavelength_resolved,2),
                 np.round(self.shortest_temporal_wavelength_resolved,2)]]
-        
-        Leaderboard = pd.DataFrame(data, 
-                                columns=['Method', 
-                                         "µ(RMSE) ", 
-                                         "σ(RMSE)", 
-                                        'λx (degree)', 
+
+        Leaderboard = pd.DataFrame(data,
+                                columns=['Method',
+                                         "µ(RMSE) ",
+                                         "σ(RMSE)",
+                                        'λx (degree)',
                                         'λt (days)'])
-        
+
         with open(f'{self.dir_output}/metrics.txt', 'w') as f:
             dfAsString = Leaderboard.to_string()
             f.write(dfAsString)
-        
+
     def _rmse_score(self, plot=True):
 
         logger.info('Compute RMSE-based scores...')
 
-        # RMSE(t) 
+        # RMSE(t)
         rmse_t = 1 - (((self.ds_pred - self.ds_target)**2).mean(dim=('lon', 'lat')))**0.5/(((self.ds_target)**2).mean(dim=('lon', 'lat')))**0.5
-        
-        # RMSE(x, y) 
+
+        # RMSE(x, y)
         rmse_xy = 1 - ((self.ds_pred - self.ds_target)**2).mean(axis=0)**0.5 /(((self.ds_target)**2).mean(axis=0))**0.5
 
         rmse_t = rmse_t.rename('rmse_t')
@@ -116,29 +116,29 @@ class Diag_OSSE():
 
 
     def _psd_score(self, plot=True):
-        
+
         logger.info('Compute PSD-based scores...')
-    
-        
+
+
         # Compute error = SSH_reconstruction - SSH_true
         err = (self.ds_pred - self.ds_target)
         err = err.chunk({"lat":1, 'time': err['time'].size, 'lon': err['lon'].size})
-        # make time vector in days units 
+        # make time vector in days units
         err['time'] = (err.time - err.time[0]) / np.timedelta64(1, 'D')
-        
+
         # Rechunk SSH_true
         signal = self.ds_target.chunk({"lat":1, 'time': self.ds_target['time'].size, 'lon': self.ds_target['lon'].size})
         # make time vector in days units
         signal['time'] = (signal.time - signal.time[0]) / np.timedelta64(1, 'D')
-    
+
         # Compute PSD_err and PSD_signal
         psd_err = xrft.power_spectrum(err, dim=['time', 'lon'], detrend='constant', window=True).compute()
         psd_signal = xrft.power_spectrum(signal, dim=['time', 'lon'], detrend='constant', window=True).compute()
-        
+
         # Averaged over latitude
         mean_psd_signal = psd_signal.mean(dim='lat').where((psd_signal.freq_lon > 0.) & (psd_signal.freq_time > 0), drop=True)
         mean_psd_err = psd_err.mean(dim='lat').where((psd_err.freq_lon > 0.) & (psd_err.freq_time > 0), drop=True)
-        
+
         # return PSD-based score
         psd_based_score = (1.0 - mean_psd_err/mean_psd_signal)
 
@@ -173,7 +173,7 @@ class Diag_OSSE():
             ax.tick_params(axis='both', labelsize=18)
 
             c2 = ax.contour(1./(psd_based_score.freq_lon), 1./psd_based_score.freq_time, data, levels=[0.5], linewidths=2, colors='k')
-            
+
             cbar = fig.colorbar(c1, ax=ax, pad=0.01)
             cbar.add_lines(c2)
 
@@ -197,10 +197,9 @@ class Diag_OSSE():
                             dict(facecolor='black', shrink=0.05),
                                 horizontalalignment='left',
                                 verticalalignment='center')
-            
+
             fig.savefig(f'{self.dir_output}/psd.png',dpi=100)
 
-    
+
         return
-    
-    
+

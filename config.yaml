@@ -23,7 +23,7 @@ loss: "MSE"
 gpu_device: 0
 lr: 1e-4
 batch_size: 8
-epochs: 100
+epochs: 150
 
 workers: 8
 seed: 123
