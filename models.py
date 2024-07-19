@@ -140,7 +140,7 @@ class SimpleAutoencoderCNN3D(nn.Module):
 
         # Decoder
         x = self.decoder(x)
-        x = self.final_layers(x)
+        # x = self.final_layers(x)
 
         return x
 

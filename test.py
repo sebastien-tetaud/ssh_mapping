@@ -24,9 +24,13 @@ def prediction(test_dataloader, device, model, ymin, ymax):
 
         with torch.no_grad():
             pred = model(inputs)
+            pred = pred[:, :, 3, :, :]
+
 
         pred = torch.squeeze(pred, 0)
-        pred = pred.detach().cpu().numpy()[0,0,:,:]
+        pred = pred.detach().cpu().numpy()[0,:,:]
+
+        # pred = pred.detach().cpu().numpy()[0,0,:,:]
 
 
         # Back to real values before normalization
