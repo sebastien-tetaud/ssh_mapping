@@ -86,26 +86,24 @@ def data_augmentation(x, y):
     return x_augmented, y_augmented
 
 
-def create_3d_datasets(ds_inputs, ds_target, depth=6):
+def create_3d_datasets(ds_inputs, ds_target, depth=7, idx_target=3):
+
     data_inputs = ds_inputs.values
     data_target = ds_target.values
 
     new_inputs = []
     new_target = []
-    for i in range(0, len(data_inputs)):
 
-        if i < (depth/2):
+    i = 0
+    while i<len(data_inputs):
 
-            input_slice = data_inputs[0: depth, :, :]
+        if i + depth < len(data_inputs):
+            input_slice = data_inputs[i: i + depth, :, :]
+            target_slice = data_target[i: i + depth, :, :]
+            new_inputs.append(input_slice)
+            new_target.append(target_slice[idx_target])
 
-        elif i > (depth/2) and i < (len(data_inputs)- (depth/2)):
-
-            input_slice = data_inputs[i - (int(depth/2)): i + (int(depth/2)), :, :]
-        else:
-            input_slice = data_inputs[- depth:, :, :]
-        target_slice = data_target[i, :, :]
-        new_inputs.append(input_slice)
-        new_target.append(target_slice)
+        i += 1
 
     new_inputs = np.array(new_inputs)
     new_target = np.array(new_target)
@@ -122,6 +120,8 @@ class TrainDataset(Dataset):
 
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
 
     def __getitem__(self, index):
@@ -132,9 +132,9 @@ class TrainDataset(Dataset):
 
         y = self.ds_target[index].values
 
-        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
 
-        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax  - self.ymin) + 0.01
 
         x_norm[np.isnan(x_norm)] = 0.001
 
@@ -162,6 +162,8 @@ class EvalDataset(Dataset):
 
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
 
     def __getitem__(self, index):
@@ -173,9 +175,9 @@ class EvalDataset(Dataset):
         y = self.ds_target[index].values
 
 
-        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
 
-        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax  - self.ymin) + 0.01
 
         x_norm[np.isnan(x_norm)] = 0.001
 
@@ -203,6 +205,8 @@ class TestDataset(Dataset):
 
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
 
     def __getitem__(self, index):
@@ -213,9 +217,9 @@ class TestDataset(Dataset):
 
         y = self.ds_target[index].values
 
-        y_norm = (y-y.min())/(y.max() - y.min()) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
 
-        x_norm = (x-y.min())/(y.max() - y.min()) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax - self.ymin) + 0.01
 
         x_norm[np.isnan(x_norm)] = 0.001
 
@@ -236,15 +240,16 @@ class TrainDataset3D(Dataset):
     def __init__(self, ds_inputs, ds_target):
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
     def __getitem__(self, index):
         x = self.ds_inputs[index]  # 3D numpy array (depth, height, width)
         y = self.ds_target[index]  # 3D numpy array (depth, height, width)
 
         # Normalize the data
-        y_min, y_max = y.min(), y.max()
-        y_norm = (y - y_min) / (y_max - y_min) + 0.01
-        x_norm = (x - y_min) / (y_max - y_min) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax - self.ymin) + 0.01
         x_norm[np.isnan(x_norm)] = 0.001
 
         # Transform to tensors and add channel dimension
@@ -261,15 +266,16 @@ class TestDataset3D(Dataset):
     def __init__(self, ds_inputs, ds_target):
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
     def __getitem__(self, index):
         x = self.ds_inputs[index]  # 3D numpy array (depth, height, width)
         y = self.ds_target[index]  # 3D numpy array (depth, height, width)
 
         # Normalize the data
-        y_min, y_max = y.min(), y.max()
-        y_norm = (y - y_min) / (y_max - y_min) + 0.01
-        x_norm = (x - y_min) / (y_max - y_min) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax - self.ymin) + 0.01
         x_norm[np.isnan(x_norm)] = 0.001
 
         # Transform to tensors and add channel dimension
@@ -286,15 +292,16 @@ class EvalDataset3D(Dataset):
     def __init__(self, ds_inputs, ds_target):
         self.ds_inputs = ds_inputs
         self.ds_target = ds_target
+        self.ymin = ds_target.min()
+        self.ymax = ds_target.max()
 
     def __getitem__(self, index):
         x = self.ds_inputs[index]  # 3D numpy array (depth, height, width)
         y = self.ds_target[index]  # 3D numpy array (depth, height, width)
 
         # Normalize the data
-        y_min, y_max = y.min(), y.max()
-        y_norm = (y - y_min) / (y_max - y_min) + 0.01
-        x_norm = (x - y_min) / (y_max - y_min) + 0.01
+        y_norm = (y-self.ymin)/(self.ymax - self.ymin) + 0.01
+        x_norm = (x-self.ymin)/(self.ymax - self.ymin) + 0.01
         x_norm[np.isnan(x_norm)] = 0.001
 
         # Transform to tensors and add channel dimension

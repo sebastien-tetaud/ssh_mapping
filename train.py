@@ -15,6 +15,8 @@ from torch.utils.tensorboard import SummaryWriter  # type: ignore
 from tqdm import tqdm  # type: ignore
 
 import models
+import customLosses
+
 from datasets import TrainDataset3D, create_3d_datasets
 from utils import (AverageMeter, count_model_parameters, estimate_model_size,
                    load_config, plot_loss_metrics, save_config,
@@ -39,6 +41,7 @@ def main():
     LOSS_FUNC = config['loss']
     INPUTS_PATH = config['inputs_path']
     DEPTH = config['depth']
+    IDX_TARGET = config['idx_target']
     TARGET_PATH = config['target_path']
     DATA_SPLIT = config['data_split']
     TRAIN_START = config['train_start']
@@ -97,9 +100,6 @@ def main():
     logger.info("Number of parameters {}: ".format(nb_parameters))
 
     # Define Optimizer
-    if LOSS_FUNC == "MSE":
-        criterion = nn.MSELoss()
-
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
     ds_inputs = xr.open_dataset(INPUTS_PATH)
@@ -119,8 +119,8 @@ def main():
     ds_target_valid = ds_target['ssh'][train_samples:]
 
     # Create 3D training and validation datasets
-    train_inputs_3d, train_target_3d = create_3d_datasets(ds_input_train, ds_target_train, depth=6)
-    valid_inputs_3d, valid_target_3d = create_3d_datasets(ds_input_valid, ds_target_valid, depth=6)
+    train_inputs_3d, train_target_3d = create_3d_datasets(ds_input_train, ds_target_train, depth=DEPTH)
+    valid_inputs_3d, valid_target_3d = create_3d_datasets(ds_input_valid, ds_target_valid, depth=DEPTH)
 
     logger.info("Number of Training data {0:d}".format(len(ds_target_train)))
     logger.info("------")
@@ -138,6 +138,18 @@ def main():
 
     valid_dataset = TrainDataset3D(valid_inputs_3d, valid_target_3d)
     eval_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
+
+
+
+    # Define Loss Function
+    if LOSS_FUNC == "MSE":
+        criterion = nn.MSELoss()
+    elif LOSS_FUNC == "train.py":
+        # Initialize Quasi-Geostrophic loss function
+        criterion = customLosses.QGLoss(lon=torch.tensor(ds_target['lon'].values), lat=torch.tensor(ds_target['lat'].values), dt=config['dt'], c=config['c'], device=device, alpha=config['alpha'], Nh=config['Nh'])
+
+
+
 
     best_weights = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -159,10 +171,9 @@ def main():
                 inputs = inputs.to(device, dtype=torch.float)
                 targets = targets.to(device, dtype=torch.float)
                 preds = model(inputs)
+                preds = preds[:, :, IDX_TARGET, :, :]
 
-                preds = preds[:, :, 3, :, :]
-
-                loss_train = torch.sqrt(criterion(preds.to(torch.float32), targets.to(torch.float32)))
+                loss_train = criterion(preds, targets)
                 loss_train.backward()
                 optimizer.step()
                 train_losses.update(loss_train.item(), len(inputs))
@@ -191,8 +202,8 @@ def main():
 
                 # pred = model(inputs, masks)
                 pred = model(inputs)
-                pred = pred[:, :, 3, :, :]
-                eval_loss = torch.sqrt(criterion(pred.to(torch.float32), target.to(torch.float32)))
+                pred = pred[:, :, IDX_TARGET, :, :]
+                eval_loss = criterion(pred, target)
 
             eval_losses.update(eval_loss.item(), len(inputs))
             target = torch.squeeze(target, 0)

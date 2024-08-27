@@ -13,7 +13,7 @@ from datasets import TestDataset3D, create_3d_datasets
 from utils import count_model_parameters, load_model
 
 
-def prediction(test_dataloader, device, model, ymin, ymax):
+def prediction(test_dataloader, device, model, ymin, ymax, idx_target):
 
     list_pred = []
 
@@ -24,14 +24,11 @@ def prediction(test_dataloader, device, model, ymin, ymax):
 
         with torch.no_grad():
             pred = model(inputs)
-            pred = pred[:, :, 3, :, :]
+            pred = pred[:, :, idx_target, :, :]
 
 
         pred = torch.squeeze(pred, 0)
         pred = pred.detach().cpu().numpy()[0,:,:]
-
-        # pred = pred.detach().cpu().numpy()[0,0,:,:]
-
 
         # Back to real values before normalization
         # We should create a specific function for normalization and associated de-normalization
@@ -57,6 +54,7 @@ def test(config_file, checkpoint_path, prediction_dir):
     animate = config_file['animate']
     compute_metrics = config_file['compute_metrics']
     depth = config_file['depth']
+    idx_target = config_file['idx_target']
 
     test_dir = os.path.join(prediction_dir,"test_inference")
     if not os.path.exists(test_dir):
@@ -74,15 +72,17 @@ def test(config_file, checkpoint_path, prediction_dir):
 
     ds_inputs = ds_inputs.sel(time=slice(test_start, test_end))[name_var_inputs]
     ds_target = ds_target.sel(time=slice(test_start, test_end))[name_var_target]
-    test_inputs_3d, test_target_3d = create_3d_datasets(ds_inputs, ds_target, depth=depth)
+    test_inputs_3d, test_target_3d = create_3d_datasets(ds_inputs, ds_target, depth=depth, idx_target=idx_target)
 
     test_dataset = TestDataset3D(test_inputs_3d, test_target_3d)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    # Run prediction and stack in an array
 
-    pred = prediction(test_dataloader, device, model, float(ds_target.min().values), float(ds_target.max().values))
+    # Run prediction and stack in an array
+    pred = prediction(test_dataloader, device, model, ymin=test_dataset.ymin, ymax=test_dataset.ymax, idx_target=idx_target)
 
     # Create dataset
+    ds_inputs = ds_inputs.isel(time=slice(idx_target, pred.shape[0]+idx_target))
+    ds_target = ds_target.isel(time=slice(idx_target, pred.shape[0]+idx_target))
     ds_pred = ds_target.copy()
     ds_pred.data = pred
 

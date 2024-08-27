@@ -2,21 +2,22 @@ outpout_dir: models/
 prediction_dir: training_inference/
 
 # inputs_path: data/data_inputs_5days.nc
-inputs_path: data/data_inputs.nc
-target_path: data/data_target.nc
+inputs_path: data_inputs.nc
+target_path: data_target.nc
 name_var_inputs: ssh
 name_var_target: ssh
 
 # https://github.com/ocean-data-challenges/2020a_SSH_mapping_NATL60?tab=readme-ov-file
 test_start: "2012-10-22"
 test_end: "2012-12-02"
-data_split: [90,10]
+data_split: [80,20]
 
 train_start: "2013-01-02"
 train_end: "2013-09-30"
 
 model_architecture: SimpleAutoencoderCNN3D
-depth: 6
+depth: 21
+idx_target: 10
 
 log_dir: "log"
 loss: "MSE"
@@ -24,6 +25,12 @@ gpu_device: 0
 lr: 1e-4
 batch_size: 8
 epochs: 150
+
+# Parameters for QG loss
+c: 2.7
+dt: 900
+alpha: .5
+Nh: 1
 
 workers: 8
 seed: 123
